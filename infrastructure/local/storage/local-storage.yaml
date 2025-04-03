@@ -1,0 +1,21 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: game-servers
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: minecraft-data-pv
+  labels: 
+    type: local
+spec:
+  storageClassName: local-storage
