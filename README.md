@@ -3,6 +3,7 @@
 The Goal of this project is to learn more about Kubernetes by designing and building a home cloud. Because it's fun, and I want to deploy my own apps and servers. 
 
 ## Project Structure:
+```
 home-kubernetes-cloud/
 ├── infrastructure/
 │   ├── local/
@@ -51,3 +52,4 @@ home-kubernetes-cloud/
     └── deployment-guides/
         ├── game-server-guide.md
         └── web-app-guide.md
+```
