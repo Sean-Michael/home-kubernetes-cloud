@@ -15,7 +15,7 @@ fi
 
 # Install K3s server
 echo "Installing K3s server..."
-curl -sfL https://get.k3s.io | sudo sh -s - --disable=traefik
+curl -sfL https://get.k3s.io | sudo sh -s - --flannel-iface=enp1s0 --disable=traefik
 
 # Wait for K3s to be ready
 echo "Waiting for K3s to initialize..."
@@ -23,7 +23,7 @@ sleep 30
 
 # Get node token for workers to join
 NODE_TOKEN=$(sudo cat /var/lib/rancher/k3s/server/node-token)
-MASTER_IP=$(ip -4 addr show eth0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+MASTER_IP=$(ip -4 addr show enp1s0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
 
 echo "=================================================================="
 echo "K3s master node configured successfully!"

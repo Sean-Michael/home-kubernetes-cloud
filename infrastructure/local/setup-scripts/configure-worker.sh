@@ -24,7 +24,7 @@ sudo sed -i '/swap/d' /etc/fstab
 
 # Install K3s agent
 echo "Installing K3s agent and joining cluster..."
-curl -sfL https://get.k3s.io | K3S_URL=https://$MASTER_IP:6443 K3S_TOKEN=$NODE_TOKEN sudo sh -
+curl -sfL https://get.k3s.io | K3S_URL=https://$MASTER_IP:6443 K3S_TOKEN=$NODE_TOKEN sudo sh -s - --flannel-iface=enp1s0
 
 echo "Worker node configured and joined to cluster!"
 echo "Verify by running 'kubectl get nodes' on the master node."
