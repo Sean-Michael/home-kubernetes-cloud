@@ -15,7 +15,7 @@ fi
 
 # Install K3s server
 echo "Installing K3s server..."
-curl -sfL https://get.k3s.io | sudo sh -s - --flannel-iface=enp1s0 --disable=traefik
+curl -sfL https://get.k3s.io | sudo sh -s - --disable=traefik
 
 # Wait for K3s to be ready
 echo "Waiting for K3s to initialize..."
