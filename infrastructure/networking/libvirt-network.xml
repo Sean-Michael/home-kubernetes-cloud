@@ -1,0 +1,14 @@
+<network>
+  <name>k3s-network</name>
+  <forward mode='nat'/>
+  <bridge name='k3sbr0' stp='on' delay='0'/>
+  <ip address='192.168.123.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='192.168.123.100' end='192.168.123.200'/>
+      <!-- Fixed IPs for our cluster nodes -->
+      <host mac='52:54:00:00:00:01' name='k3s-master' ip='192.168.123.10'/>
+      <host mac='52:54:00:00:00:02' name='k3s-worker1' ip='192.168.123.11'/>
+      <host mac='52:54:00:00:00:03' name='k3s-worker2' ip='192.168.123.12'/>
+    </dhcp>
+  </ip>
+</network>
