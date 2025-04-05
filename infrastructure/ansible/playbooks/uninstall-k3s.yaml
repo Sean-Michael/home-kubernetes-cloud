@@ -1,0 +1,30 @@
+---
+# uninstall-k3s.yml
+- name: Uninstall K3s from all nodes
+  hosts: k3s_cluster  # This should target both server and agents
+  become: yes
+  
+  tasks:
+    - name: Uninstall K3s from agent nodes
+      shell: /usr/local/bin/k3s-agent-uninstall.sh
+      args:
+        removes: /usr/local/bin/k3s-agent-uninstall.sh
+      when: "'agents' in group_names"
+      ignore_errors: yes
+    
+    - name: Uninstall K3s from server node
+      shell: /usr/local/bin/k3s-uninstall.sh
+      args:
+        removes: /usr/local/bin/k3s-uninstall.sh
+      when: "'server' in group_names"
+      ignore_errors: yes
+    
+    - name: Remove K3s data directories
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /var/lib/rancher/k3s
+        - /etc/rancher/k3s
+        - /var/lib/kubelet
+        - /var/lib/cni

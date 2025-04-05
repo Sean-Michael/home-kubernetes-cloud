@@ -1,0 +1,49 @@
+---
+- name: Configure K3s Server
+  hosts: server
+  become: yes
+  vars:
+    flannel_iface: ens3        # Based on your cloud-init network interface
+  
+  tasks:
+    - name: Wait for cloud-init to complete
+      wait_for:
+        path: /var/lib/cloud/instance/boot-finished
+        state: present
+        timeout: 300
+    
+    - name: Install K3s server
+      shell: |
+        curl -sfL https://get.k3s.io | sh -s - \
+          --flannel-iface={{ flannel_iface }} \
+          --disable=traefik \
+          --write-kubeconfig-mode 644 \
+          --tls-san {{ ansible_host }}
+      args:
+        executable: /bin/bash
+        creates: /var/lib/rancher/k3s/server/node-token
+    
+    - name: Read node-token
+      slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: node_token
+    
+    - name: Store facts for agent nodes to use
+      set_fact:
+        k3s_token: "{{ node_token.content | b64decode | trim }}"
+        k3s_url: "https://{{ ansible_host }}:6443"
+        cacheable: yes
+    
+    - name: Wait for server to become ready
+      shell: k3s kubectl get nodes
+      register: kubectl_get_nodes
+      until: kubectl_get_nodes.rc == 0
+      retries: 10
+      delay: 10
+      changed_when: false
+    
+    - name: Print cluster info
+      shell: |
+        echo "K3s server is now running!"
+        echo "Run 'kubectl get nodes' to see your cluster."
+      changed_when: false

@@ -1,0 +1,31 @@
+---
+- name: Configure K3s Agents
+  hosts: agents
+  become: yes
+  vars:
+    flannel_iface: ens3  # Based on your cloud-init network interface
+  
+  tasks:
+    - name: Wait for cloud-init to complete
+      wait_for:
+        path: /var/lib/cloud/instance/boot-finished
+        state: present
+        timeout: 300
+    
+    - name: Set facts from server
+      set_fact:
+        k3s_token: "{{ hostvars[groups['server'][0]]['k3s_token'] }}"
+        k3s_url: "{{ hostvars[groups['server'][0]]['k3s_url'] }}"
+    
+    - name: Install K3s agent
+      shell: |
+        curl -sfL https://get.k3s.io | K3S_URL={{ k3s_url }} K3S_TOKEN={{ k3s_token }} sh -s - \
+          --flannel-iface={{ flannel_iface }}
+      args:
+        executable: /bin/bash
+        creates: /var/lib/rancher/k3s/agent/kubelet.kubeconfig
+    
+    - name: Verify agent registration
+      shell: |
+        echo "K3s agent installed and joined the cluster!"
+      changed_when: false

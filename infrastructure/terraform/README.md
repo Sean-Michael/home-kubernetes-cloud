@@ -5,6 +5,7 @@ This directory contains the Terraform configuration files to provision my K3s cl
 ## Overview
 
 The Terraform configuration automates the creation of the following resources:
+
 - A NAT-based virtual network for the cluster.
 - A base Ubuntu image for the virtual machines.
 - One master node and multiple worker nodes for the K3s cluster.
@@ -14,6 +15,7 @@ The Terraform configuration automates the creation of the following resources:
 ## Prerequisites
 
 Before using this configuration, ensure the following are installed on your system:
+
 - [Terraform](https://www.terraform.io/downloads)
 - [LibVirt](https://libvirt.org/)
 - [QEMU](https://www.qemu.org/)
@@ -24,12 +26,14 @@ Before using this configuration, ensure the following are installed on your syst
 
 1. **Initialize Terraform**:
    Run the following command to initialize the Terraform working directory:
+
    ```bash
    terraform init
    ```
 
 2. **Customize Variables**:
    Edit the `main.tf` file or create a `terraform.tfvars` file to override default variables. For example:
+
    ```hcl
    agent_count = 3
    ssh_public_key_path = "~/.ssh/id_rsa.pub"
@@ -37,12 +41,14 @@ Before using this configuration, ensure the following are installed on your syst
 
 3. **Plan the Infrastructure**:
    Preview the changes Terraform will make:
+
    ```bash
    terraform plan
    ```
 
 4. **Apply the Configuration**:
    Apply the configuration to create the resources:
+
    ```bash
    terraform apply
    ```
@@ -53,6 +59,7 @@ Before using this configuration, ensure the following are installed on your syst
 ## Outputs
 
 The following outputs are generated:
+
 - `server_ip`: The IP address of the K3s server node.
 - `agent_ips`: The IP addresses of the K3s agent nodes.
 - Ansible inventory file for further configuration.
@@ -78,6 +85,7 @@ terraform/
 ## Cleanup
 
 To destroy the created resources, run:
+
 ```bash
 terraform destroy
 ```
