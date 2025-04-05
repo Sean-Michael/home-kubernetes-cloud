@@ -2,7 +2,7 @@ terraform {
     required_providers {
       libvirt = {
         source = "dmacvicar/libvirt"
-        version = "~> 0.7.0"
+        version = "0.7.1"
       }
     }
 }
@@ -11,55 +11,151 @@ provider "libvirt" {
     uri = "qemu:///system"
 }
 
-resource "libvirt_volume" "k8s_node_disk" {
-    name = "k8s-node-disk"
-    pool = "default"
-    size = 21474836480
+# Putting this near the top so it's easy to add/remove agents
+variable "agent_count" {
+    description = "Number of K3s agent nodes"
+    type = number
+    default = 2
 }
 
-resource "libvirt_domain" "k8s_node" {
-    name = "k8s-node1"
-    memory = 4096
+resource "libvirt_pool" "k3s_cluster" {
+    name = "k3s_cluster"
+    type = "dir"
+    path = "/var/lib/libvirt/images/k3s-cluster"
+
+}
+
+resource "libvirt_network" "k3s_network" {
+    name = "k3s_network"
+    mode = "nat"
+    domain = "k3s.local"
+    addresses = ["192.168.123.0/24"]
+
+    dns {
+        enabled = true
+    }
+}
+
+# Base OS image for the cluster nodes 
+resource "libvirt_volume" "ubuntu_base" {
+    name = "ubuntu_base"
+    pool = libvirt_pool.k3s_cluster.name
+    source = "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img"
+    format = "qcow2"
+
+}
+
+# server domain volume
+resource "libvirt_volume" "k3s_server" {
+    name = "k3s_server.qcow2"
+    base_volume_id = libvirt_volume.ubuntu_base.id 
+    pool = libvirt_pool.k3s_cluster.name
+    size = 21474836480    # 20GB
+}
+
+# agents domain volumes
+resource "libvirt_volume" "k3s_agent" {
+    count = var.agent_count
+    name = "k3s_agent_${count.index}.qcow2"
+    base_volume_id = libvirt_volume.ubuntu_base.id 
+    pool = libvirt_pool.k3s_cluster.name
+    size = 21474836480  # 20GB
+}
+
+variable "ssh_public_key_path" {
+    description = "Path to SSH public key"
+    type = string
+    default = "~/.ssh/id_ed25519.pub"
+}
+
+# cloud-init ISO to customize domain on boot up
+resource "libvirt_cloudinit_disk" "server_cloudinit" {
+    name = "server-cloudinit.iso"
+    pool = libvirt_pool.k3s_cluster.name
+    user_data = templatefile("${path.module}/cloud_init.tpl", {
+        hostname = "k3s-server"
+        ssh_key = file(var.ssh_public_key_path)
+    })
+    network_config = templatefile("${path.module}/network_config.tpl", {
+        ip_address = "192.168.123.10"
+        gateway = "192.168.123.1"
+    })
+}
+
+# cloud-init ISO to customize domain on boot up
+resource "libvirt_cloudinit_disk" "agent_cloudinit" {
+    count = var.agent_count
+    pool = libvirt_pool.k3s_cluster.name
+    name = "agent-${count.index}-cloudinit.iso"
+    user_data = templatefile("${path.module}/cloud_init.tpl", {
+        hostname = "k3s-agent-${count.index}"
+        ssh_key = file(var.ssh_public_key_path)
+    })
+    network_config = templatefile("${path.module}/network_config.tpl", {
+        ip_address = "192.168.123.${count.index + 11}"
+        gateway = "192.168.123.1"
+    })
+}
+
+# server domain resource
+resource "libvirt_domain" "k3s_server" {
+    name = "k3s_server"
+    description = "server k3s node"
+    memory = "6144" # 6GB
     vcpu = 2
 
-    disk {
-        volume_id = libvirt_volume.k8s_node_disk.id
-    }
+    cloudinit = libvirt_cloudinit_disk.server_cloudinit.id 
 
     network_interface {
-        network_name = "default"
+        network_id = libvirt_network.k3s_network.id 
+        addresses = ["192.168.123.10"]
     }
 
-    cloudinit = libvirt_cloudinit_disk.k8s_cloud_init.id
+    disk {
+        volume_id = libvirt_volume.k3s_server.id
+    }
+
+    console {
+        type        = "pty"
+        target_type = "serial"
+        target_port = "0"
+    }
+
+    graphics {
+        type        = "spice"
+        listen_type = "address"
+        autoport    = true
+    }
 }
 
-resource "libvirt_cloudinit_disk" "k8s_cloud_init" {
-    name = "cloud-init-k8s.iso"
-    pool = "default"
-    user_data = <<EOF
-hostname: k8s-node1
-users:
-    - name: ubuntu
-    ssh-authorized-keys:
-        - "${tls_private_key.k8s_ssh_key.public_key_openssh}"
-    sudo: ['ALL=(ALL) NOPASSWD:ALL']
-    shell: /bin/bash
-EOF
-}
+# agents domain resource
+resource "libvirt_domain" "k3s_agent" {
+    count = var.agent_count
+    name = "k3s_agent-${count.index}"
+    description = "agent k3s node"
+    memory = "4096" # 4GB
+    vcpu = 1
+    
+    cloudinit = libvirt_cloudinit_disk.agent_cloudinit[count.index].id
 
-resource "tls_private_key" "k8s_ssh_key" {
-    algorithm = "RSA"
-    rsa_bits = 4096
-}
+    network_interface {
+        network_id = libvirt_network.k3s_network.id 
+        addresses = ["192.168.123.${count.index + 11}"]
+    }
 
-resource "local_file" "private_key" {
-    content = tls_private_key.k8s_ssh_key.private_key_pem
-    filename = "${path.module}/k8s_ssh_key"
-    file_permission = "0600"
-}
+    disk {
+        volume_id = libvirt_volume.k3s_agent[count.index].id
+    }
 
-resource "local_file" "public_key" {
-    content = tls_private_key.k8s_ssh_key.public_key_openssh
-    filename = "${path.module}/k8s_ssh_key.pub"
-    file_permission = "0644"
+    console {
+        type        = "pty"
+        target_type = "serial"
+        target_port = "0"
+    }
+
+    graphics {
+        type        = "spice"
+        listen_type = "address"
+        autoport    = true
+    }
 }
