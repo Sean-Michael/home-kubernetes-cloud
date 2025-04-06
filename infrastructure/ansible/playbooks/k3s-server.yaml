@@ -11,7 +11,7 @@
         path: /var/lib/cloud/instance/boot-finished
         state: present
         timeout: 300
-    
+
     - name: Install K3s server
       shell: |
         curl -sfL https://get.k3s.io | sh -s - \

@@ -1,0 +1,61 @@
+---
+# dns-ssh.yaml - Configures Host-level DNS for ease of use and SSH key distribution
+- name: Configure DNS and SSH for K3s Cluster
+  hosts: all
+  become: yes
+  tasks:
+    - name: Gather facts from all hosts
+      setup:
+      delegate_to: "{{ item }}"
+      delegate_facts: true
+      loop: "{{ groups['all'] }}"
+      run_once: true
+
+    - name: Generate SSH key for control plane
+      ansible.builtin.user:
+        name: ubuntu
+        generate_ssh_key: yes
+        ssh_key_bits: 4096
+        ssh_key_file: .ssh/id_rsa
+      when: inventory_hostname in groups['server']
+    
+    - name: Register server's public key
+      ansible.builtin.slurp:
+        src: /home/ubuntu/.ssh/id_rsa.pub
+      register: pubkey
+      when: inventory_hostname in groups['server']
+    
+    - name: Set pubkey fact
+      set_fact:
+        server_pubkey: "{{ pubkey.content | b64decode }}"
+      when: inventory_hostname in groups['server']
+    
+    - name: Share pubkey with all hosts
+      set_fact:
+        server_pubkey: "{{ hostvars[groups['server'][0]]['server_pubkey'] }}"
+      when: inventory_hostname != groups['server'][0]
+      run_once: false
+    
+    - name: Add server's SSH public key to agent's authorized_keys
+      ansible.builtin.authorized_key:
+        user: ubuntu
+        state: present
+        key: "{{ hostvars[groups['server'][0]]['server_pubkey'] }}"
+      when: inventory_hostname in groups['agents']
+    
+    - name: Update /etc/hosts for all nodes
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "{{ hostvars[item]['ansible_host'] }} {{ item }}"
+        state: present
+      loop: "{{ groups['all'] }}"
+      when: item != inventory_hostname
+    
+    - name: Verify /etc/hosts configuration
+      shell: cat /etc/hosts
+      register: hosts_result
+      changed_when: false
+      
+    - name: Display /etc/hosts content
+      debug:
+        var: hosts_result.stdout_lines

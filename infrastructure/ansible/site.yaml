@@ -1,3 +1,4 @@
 ---
+- import_playbook: playbooks/dns-ssh.yaml
 - import_playbook: playbooks/k3s-server.yaml
 - import_playbook: playbooks/k3s-agent.yaml
