@@ -1,9 +1,9 @@
 [server]
-${server_ip} ansible_user=ubuntu
+k3s-server ansible_host=${server_ip} ansible_user=ubuntu
 
 [agents]
-%{ for ip in agent_ips ~}
-${ip} ansible_user=ubuntu
+%{ for i,ip in agent_ips ~}
+k3s-agent-${i} ansible_host=${ip} ansible_user=ubuntu
 %{ endfor ~}
 
 [k3s_cluster:children]
