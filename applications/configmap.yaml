@@ -1,0 +1,22 @@
+# applications/minecraft/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minecraft-config
+  namespace: minecraft
+data:
+  server.properties: |
+    # Basic Minecraft server properties
+    difficulty=normal
+    gamemode=survival
+    level-name=world
+    max-players=10
+    view-distance=10
+    server-port=25565
+    enable-command-block=false
+    motd=Vanilla Minecraft Server
+    # Performance settings
+    max-tick-time=60000
+    spawn-protection=16
+    allow-flight=false
+    max-world-size=29999984

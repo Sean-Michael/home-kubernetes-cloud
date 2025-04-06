@@ -1,0 +1,51 @@
+# applications/minecraft/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minecraft
+  namespace: minecraft
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minecraft
+  template:
+    metadata:
+      labels:
+        app: minecraft
+    spec:
+      containers:
+      - name: minecraft
+        image: minecraft-vanilla:latest
+        command: ["java"]
+        args: ["-Xmx2048M", "-Xms1024M", "-jar", "server.jar", "nogui"]
+        ports:
+        - containerPort: 25565
+          protocol: TCP
+        - containerPort: 25565
+          protocol: UDP
+        volumeMounts:
+        - name: world-storage
+          mountPath: /server/world
+        - name: config
+          mountPath: /server/server.properties
+          subPath: server.properties
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "3Gi"
+            cpu: "2"
+        readinessProbe:
+          tcpSocket:
+            port: 25565
+          initialDelaySeconds: 60
+          periodSeconds: 10
+      volumes:
+      - name: world-storage
+        persistentVolumeClaim:
+          claimName: minecraft-world
+      - name: config
+        configMap:
+          name: minecraft-config

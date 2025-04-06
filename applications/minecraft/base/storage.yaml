@@ -1,0 +1,13 @@
+# applications/minecraft/base/storage.yaml
+apiVersion: v1
+kind: StorageClass
+metadata:
+  name: minecraft-data
+  namespace: minecraft
+spec: 
+  storageClassName: longhorn
+  accessModes:
+    - ReadWriteMany
+  reources: 
+    requests:
+      storage: 250Gi

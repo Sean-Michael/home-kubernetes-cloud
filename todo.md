@@ -11,7 +11,10 @@
 - [x] Create basic Ansible playbooks to configure VMs as k3s nodes using rancher
 - [x] Create playbook to setup ssh/dns.
 - [ ] Configure special node to utilize GPU resources through the Hypervizor
-- [ ] Observability with Prometheus & Grafana
+- [ ] Setup Ingress controllers
+- [ ] Configure persistent storage
+- [ ] Observability monitoring with Prometheus & Grafana
+- [ ] Logging with ?
 
 ### Extension - Future learnings
 
@@ -26,16 +29,18 @@
 ### Core Services
 
 - [x] Setup Kubernetes cluster using k3s: server (control-plane) + 2 agents.
+- [ ] Setup Relational Database (Postgres?)
 - [ ] Utilize Helm charts for package deployment.
 - [ ] Implement ArgoCD GitOps.
 
 ### Extension - Future learnings
 
 - [ ] Implement K8s
+- [ ] Container Scanning
 
 ## Applications
 
-### Core Apps:
+### Core Apps
 
 - [ ] Minecraft and other Game Servers
 - [ ] Deploy my personal website (revamped).
