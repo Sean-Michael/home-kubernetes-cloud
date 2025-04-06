@@ -11,6 +11,7 @@
 - [x] Create basic Ansible playbooks to configure VMs as k3s nodes using rancher
 - [x] Create playbook to setup ssh/dns.
 - [ ] Configure special node to utilize GPU resources through the Hypervizor
+- [ ] Observability with Prometheus & Grafana
 
 ### Extension - Future learnings
 
