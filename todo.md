@@ -36,8 +36,10 @@
 
 ### Core Apps:
 
+- [ ] Minecraft and other Game Servers
 - [ ] Deploy my personal website (revamped).
 - [ ] Deploy Amie's personal website.
+- [ ] Add CI/CD with self-hosted GitHub runners
 - [ ] Deploy ML Workflows.
 
 ### Extension - Future learnings
