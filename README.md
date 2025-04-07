@@ -23,3 +23,9 @@ A more detailed description of the implementation is available in a seperate [RE
 ### [Ansible](https://github.com/Sean-Michael/home-kubernetes-cloud/tree/main/infrastructure/ansible)
 
 Ansible works very nicely alongside Terraform - both being agentless, free, and open-source. Since Terraform is immuatable in it's nature when we want to .. mutate our nodes we will do so with lovely Ansible playbooks. This is where apts will get updated and K3s will be installed.
+
+### [Prometheus & Grafana](https://github.com/Sean-Michael/home-kubernetes-cloud/tree/main/platform/monitoring)
+
+Prometheus is setup as a Helm Deployment to capture time-series data on our cluster! This is then fed into Grafana for dashboarding and visualization!
+
+I also setup Hashicorp Vault for managing _secrets_ `:O`!

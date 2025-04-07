@@ -1,0 +1,45 @@
+prometheus:
+  prometheusSpec:
+    retention: 7d
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+
+grafana:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 5Gi
+  service:
+    type: NodePort
+    nodePort: 30000
+  # https://developer.hashicorp.com/vault/docs/platform/k8s/injector/annotations
+  podAnnotations:
+    vault.hashicorp.com/agent-inject: "true"
+    vault.hashicorp.com/agent-inject-secret-grafana-admin: "secret/data/grafana/admin"
+    vault.hashicorp.com/role: "grafana"
+    vault.hashicorp.com/agent-inject-template-grafana-admin: |
+      {{- with secret "secret/data/grafana/admin" -}}
+      GF_SECURITY_ADMIN_PASSWORD={{ .Data.data.password }}
+      {{- end -}}
+  
+  adminUser: admin
+  
+  envRenderSecret:
+    GF_SECURITY_ADMIN_PASSWORD__FILE: "/vault/secrets/grafana-admin"
+
+nodeExporter:
+  enabled: true  # For collecting host metrics
+  
+kubelet:
+  enabled: true
+  serviceMonitor:
+    metricRelabelings:
+      - action: replace
+        sourceLabels:
+          - node
+        targetLabel: instance
