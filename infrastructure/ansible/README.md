@@ -101,16 +101,61 @@ Before running the playbooks, ensure the following:
 - Uninstalls K3s from all nodes (server and agents).
 - Removes K3s-related directories and files.
 
+### k3s-gpu-agent.yaml
+
+- Configures a GPU-enabled worker node to join the K3s cluster.
+- Ensures that NVIDIA drivers and the NVIDIA Container Toolkit are installed and properly configured.
+- Installs the K3s agent with GPU-specific configurations, including enabling Kubernetes `DevicePlugins` and labeling the node with `gpu=true`.
+
+#### Prerequisites for GPU Nodes
+
+- NVIDIA GPU drivers must be installed and functional on the host machine.
+- The `nvidia-container-toolkit` must be installed to enable GPU support in containers.
+
+#### Usage
+
+To configure a GPU-enabled worker node, run the following command:
+
+```bash
+ansible-playbook -i inventory/hosts.ini [k3s-gpu-agent.yaml](http://_vscodecontentref_/0)
+```
+
+Here’s an updated section for your README to document the GPU-enabled worker node playbook:
+
+```markdown
+### k3s-gpu-agent.yaml
+
+- Configures a GPU-enabled worker node to join the K3s cluster.
+- Ensures that NVIDIA drivers and the NVIDIA Container Toolkit are installed and properly configured.
+- Installs the K3s agent with GPU-specific configurations, including enabling Kubernetes `DevicePlugins` and labeling the node with `gpu=true`.
+
+#### Prerequisites for GPU Nodes
+- NVIDIA GPU drivers must be installed and functional on the host machine.
+- The `nvidia-container-toolkit` must be installed to enable GPU support in containers.
+
+#### Usage
+To configure a GPU-enabled worker node, run the following command:
+```bash
+ansible-playbook -i inventory/hosts.ini k3s-gpu-agent.yaml
+```
+
+#### Key Features
+
+- Verifies that NVIDIA drivers are installed using `nvidia-smi`. If not, the playbook will fail with an appropriate error message.
+- Adds the NVIDIA Container Toolkit repository and installs the required packages.
+- Configures the NVIDIA Container Toolkit for use with `containerd`.
+- Installs the K3s agent with GPU-specific configurations, including:
+  - Setting the `--node-label="gpu=true"` flag to label the node as GPU-enabled.
+  - Enabling the `DevicePlugins` feature gate in Kubernetes.
+- Restarts `containerd` if the NVIDIA Container Toolkit configuration changes.
+
 ## Notes
 
 - The `flannel_iface` variable in the playbooks should match the network interface configured in your cloud-init templates (e.g., `ens3`).
 - Ensure that the k3s-server.yaml playbook is run before the k3s-agent.yaml playbook, as the agents require the `node-token` from the server.
-
-## Troubleshooting
-
-- If a playbook fails, check the logs for detailed error messages.
-- Ensure that the SSH key used for Ansible is valid and accessible.
-- Verify that the `cloud-init` process has completed on all nodes before running the playbooks.
+- Ensure that the `flannel_iface` variable matches the network interface used by the node (e.g., `virbr1`).
+- The playbook uses the `K3S_URL` and `K3S_TOKEN` environment variables to connect the GPU node to the K3s server. These values must be correctly set in the inventory or group variables.
+- Temporary files, such as the K3s installation script, are cleaned up after the playbook completes.
 
 ## References
 

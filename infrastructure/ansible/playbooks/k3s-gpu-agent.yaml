@@ -78,9 +78,3 @@
         - /tmp/k3s_token
         - /tmp/k3s-install.sh
 
-# sudo K3S_URL=https://192.168.123.10:6443 \
-#  K3S_TOKEN=K10f138fffa12e3a308a0478dcbe879ea73e9a8f02a4c1fa62270efb313d9f42a02::server:6424ceb75a69b7b297e746cdbdb30dc1 \
-#  k3s_AGENT_DEBUG=true \
-#  /tmp/k3s-install.sh \
-#  --flannel-iface=virbr1 \
-#  --node-label="gpu=true"
