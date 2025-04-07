@@ -1,0 +1,3 @@
+# Ansible vault
+group_vars
+*.vault.yaml

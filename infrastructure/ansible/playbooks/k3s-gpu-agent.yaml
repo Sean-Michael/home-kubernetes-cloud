@@ -1,0 +1,86 @@
+---
+- name: Configure K3s GPU Agent
+  hosts: gpu_nodes
+  become: yes
+  vars_files:
+    - "../group_vars/gpu_nodes/vault.yaml"
+  vars:
+    flannel_iface: "virbr1"  # Use default interface for host
+  
+  tasks:
+
+    - name: Check if NVIDIA drivers are installed
+      command: nvidia-smi
+      register: nvidia_smi_result
+      ignore_errors: true
+      changed_when: false
+
+    - name: Ensure NVIDIA drivers are installed
+      fail:
+        msg: "NVIDIA drivers are not installed or not functioning properly. Please install them first."
+      when: nvidia_smi_result.rc != 0
+
+    - name: Add NVIDIA apt GPG key
+      apt_key:
+        url: https://nvidia.github.io/libnvidia-container/gpgkey
+        state: present
+        keyring: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+
+    - name: Add NVIDIA Container Toolkit repository
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://nvidia.github.io/libnvidia-container/stable/deb/amd64 /"
+        state: present
+        filename: nvidia-container-toolkit
+
+    - name: Update apt repository
+      apt:
+        update_cache: yes
+
+    - name: Install NVIDIA Container Toolkit
+      apt:
+        name: nvidia-container-toolkit
+        state: present
+
+    - name: Configure NVIDIA Container Toolkit
+      command: nvidia-ctk runtime configure --runtime=containerd
+      register: nvidia_ctk_result
+      changed_when: "'Configuration complete!' in nvidia_ctk_result.stdout"
+
+    - name: Restart containerd if config changed
+      systemd:
+        name: containerd
+        state: restarted
+      when: nvidia_ctk_result.changed
+
+    - name: Download K3s installation script
+      get_url:
+        url: https://get.k3s.io
+        dest: /tmp/k3s-install.sh
+        mode: '0755'
+
+    - name: Install K3s agent with NVIDIA configuration
+      environment:
+        K3S_URL: "https://{{ hostvars['k3s-server']['ansible_host'] }}:6443"
+        K3S_TOKEN: "{{ k3s_token }}"
+      command: >
+        /tmp/k3s-install.sh
+        --flannel-iface="virbr1"
+        --node-label="gpu=true"
+        --kubelet-arg="feature-gates=DevicePlugins=true"
+      args:
+        creates: /var/lib/rancher/k3s/agent/kubelet.kubeconfig
+      
+    - name: Remove temporary files
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /tmp/k3s_token
+        - /tmp/k3s-install.sh
+
+# sudo K3S_URL=https://192.168.123.10:6443 \
+#  K3S_TOKEN=K10f138fffa12e3a308a0478dcbe879ea73e9a8f02a4c1fa62270efb313d9f42a02::server:6424ceb75a69b7b297e746cdbdb30dc1 \
+#  k3s_AGENT_DEBUG=true \
+#  /tmp/k3s-install.sh \
+#  --flannel-iface=virbr1 \
+#  --node-label="gpu=true"
