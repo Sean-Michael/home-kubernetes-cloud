@@ -6,13 +6,18 @@
 
 - name: Copy backend code
   synchronize:
-    src: "{{ playbook_dir }}/../../backend/"
+    src: "{{ playbook_dir }}/../../../applications/dbaas/backend/"
     dest: /tmp/dbaas-build/backend/
+
 
 - name: Copy frontend code
   synchronize:
-    src: "{{ playbook_dir }}/../../frontend/"
+    src: "{{ playbook_dir }}/../../../applications/dbaas/frontend/"
     dest: /tmp/dbaas-build/frontend/
+    rsync_opts:
+      - "--include=public/**"
+      - "--exclude=.git"
+      - "--exclude=node_modules"
 
 - name: Ensure package.json exists for frontend
   copy:
@@ -72,32 +77,28 @@
       CMD ["nginx", "-g", "daemon off;"]
 
 - name: Build backend image
-  docker_image:
-    build:
-      path: /tmp/dbaas-build/backend/
-    name: "{{ registry_host }}/dbaas-backend"
-    tag: latest
-    push: true
-    source: build
+  shell: |
+    docker build -t {{ registry_host }}/dbaas-backend:latest /tmp/dbaas-build/backend/
+    docker save -o /tmp/dbaas-backend.tar {{ registry_host }}/dbaas-backend:latest
+    k3s ctr images import /tmp/dbaas-backend.tar
+  args:
+    executable: /bin/bash
 
 - name: Build frontend image
-  docker_image:
-    build:
-      path: /tmp/dbaas-build/frontend/
-    name: "{{ registry_host }}/dbaas-frontend"
-    tag: latest
-    push: true
-    source: build
+  shell: |
+    docker build -t {{ registry_host }}/dbaas-frontend:latest /tmp/dbaas-build/frontend/
+    docker save -o /tmp/dbaas-frontend.tar {{ registry_host }}/dbaas-frontend:latest
+    k3s ctr images import /tmp/dbaas-frontend.tar
+  args:
+    executable: /bin/bash
 
-- name: Import backend image to K3s
-  command: k3s ctr images import {{ registry_host }}/dbaas-backend:latest
-  register: import_backend
-  changed_when: "'imported' in import_backend.stdout"
-  
-- name: Import frontend image to K3s
-  command: k3s ctr images import {{ registry_host }}/dbaas-frontend:latest
-  register: import_frontend
-  changed_when: "'imported' in import_frontend.stdout"
+- name: Clean up tarball files
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /tmp/dbaas-backend.tar
+    - /tmp/dbaas-frontend.tar
 
 - name: Clean up build directory
   file:

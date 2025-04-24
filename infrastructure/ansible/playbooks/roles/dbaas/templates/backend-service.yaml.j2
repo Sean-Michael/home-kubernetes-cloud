@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dbaas-backend
+  namespace: {{ dbaas_namespace }}
+  labels:
+    app: dbaas
+    component: backend
+spec:
+  selector:
+    app: dbaas
+    component: backend
+  ports:
+  - port: 80
+    targetPort: 5000
+  type: ClusterIP

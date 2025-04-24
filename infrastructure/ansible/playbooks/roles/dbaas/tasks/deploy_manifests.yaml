@@ -30,17 +30,49 @@
 - name: Deploy RBAC
   k8s:
     state: present
-    definition: "{{ lookup('template', 'rbac.yaml.j2') | from_yaml }}"
+    definition: "{{ item }}"
+  loop: "{{ lookup('template', 'rbac.yaml.j2').split('---') | map('trim') | reject('equalto', '') | map('from_yaml') | list }}"
 
-- name: Deploy backend
+- name: Deploy backend deployment
   k8s:
     state: present
     definition: "{{ lookup('template', 'backend-deployment.yaml.j2') | from_yaml }}"
+  vars:
+    backend_replicas: 2
+    backend_image: "localhost:5000/dbaas-backend:latest"
+    backend_resources:
+      requests:
+        memory: "256Mi"
+        cpu: "200m"
+      limits:
+        memory: "512Mi"
+        cpu: "400m"
 
-- name: Deploy frontend
+- name: Deploy backend service
+  k8s:
+    state: present
+    definition: "{{ lookup('template', 'backend-service.yaml.j2') | from_yaml }}"
+
+- name: Deploy frontend deployment
   k8s:
     state: present
     definition: "{{ lookup('template', 'frontend-deployment.yaml.j2') | from_yaml }}"
+  vars:
+    frontend_replicas: 1
+    frontend_image: "localhost:5000/dbaas-frontend:latest"
+    frontend_resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+    api_url: "http://dbaas-backend.dbaas-system.svc.cluster.local"
+
+- name: Deploy frontend service
+  k8s:
+    state: present
+    definition: "{{ lookup('template', 'frontend-service.yaml.j2') | from_yaml }}"
 
 - name: Deploy ingress
   k8s:

@@ -7,7 +7,7 @@ metadata:
     app: dbaas
     component: backend
 spec:
-  replicas: 1
+  replicas: {{ backend_replicas | default(1) }}
   selector:
     matchLabels:
       app: dbaas
@@ -21,17 +21,17 @@ spec:
       serviceAccountName: dbaas-backend
       containers:
       - name: api
-        image: dbaas-backend:latest
+        image: {{ backend_image | default('dbaas-backend:latest') }}
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 5000
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "100m"
+            memory: "{{ backend_resources.requests.memory | default('128Mi') }}"
+            cpu: "{{ backend_resources.requests.cpu | default('100m') }}"
           limits:
-            memory: "256Mi"
-            cpu: "200m"
+            memory: "{{ backend_resources.limits.memory | default('256Mi') }}"
+            cpu: "{{ backend_resources.limits.cpu | default('200m') }}"
         volumeMounts:
         - name: data
           mountPath: /app/data
@@ -39,20 +39,3 @@ spec:
       - name: data
         persistentVolumeClaim:
           claimName: dbaas-backend-data
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: dbaas-backend
-  namespace: {{ dbaas_namespace }}
-  labels:
-    app: dbaas
-    component: backend
-spec:
-  selector:
-    app: dbaas
-    component: backend
-  ports:
-  - port: 80
-    targetPort: 5000
-  type: ClusterIP

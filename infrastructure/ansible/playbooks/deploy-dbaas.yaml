@@ -10,3 +10,9 @@
 
   roles:
     - dbaas
+
+  handlers:
+    - name: Restart K3s
+      service:
+        name: k3s
+        state: restarted

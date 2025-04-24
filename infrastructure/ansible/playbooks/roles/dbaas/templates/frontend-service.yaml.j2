@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dbaas-frontend
+  namespace: {{ dbaas_namespace }}
+  labels:
+    app: dbaas
+    component: frontend
+spec:
+  selector:
+    app: dbaas
+    component: frontend
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP

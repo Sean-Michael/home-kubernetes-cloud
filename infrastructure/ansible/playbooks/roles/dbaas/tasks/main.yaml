@@ -24,6 +24,15 @@
   set_fact:
     ansible_python_interpreter: /opt/venv/bin/python
 
+- name: Configure K3s registry for insecure local registry
+  copy:
+    dest: /etc/rancher/k3s/registries.yaml
+    content: |
+      mirrors:
+        "localhost:5000":
+          endpoint:
+            - "http://localhost:5000"
+
 - name: Import Flux setup tasks
   import_tasks: flux_setup.yaml
   environment:
@@ -32,9 +41,18 @@
 
 - name: Import build images tasks
   import_tasks: build_images.yaml
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+    K8s_AUTH_HOST: "https://127.0.0.1:6443"
 
 - name: Import deployment tasks
   import_tasks: deploy_manifests.yaml
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+    K8s_AUTH_HOST: "https://127.0.0.1:6443"
 
 - name: Import monitoring setup tasks
   import_tasks: monitoring.yaml
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+    K8s_AUTH_HOST: "https://127.0.0.1:6443"
