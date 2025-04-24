@@ -1,0 +1,33 @@
+---
+- name: Create Flux namespace
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ flux_namespace }}"
+
+- name: Add Flux Helm repository
+  kubernetes.core.helm_repository:
+    name: fluxcd
+    repo_url: https://charts.fluxcd.io
+
+- name: Deploy Flux Helm Operator
+  kubernetes.core.helm:
+    name: helm-operator
+    chart_ref: fluxcd/helm-operator
+    release_namespace: "{{ flux_namespace }}"
+    values:
+      helm:
+        versions: v3
+
+- name: Wait for Flux deployment to be ready
+  k8s_info:
+    kind: Deployment
+    name: helm-operator
+    namespace: "{{ flux_namespace }}"
+  register: flux_deployment
+  until: flux_deployment.resources[0].status.readyReplicas is defined and flux_deployment.resources[0].status.readyReplicas == flux_deployment.resources[0].status.replicas
+  retries: 10
+  delay: 30

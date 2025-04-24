@@ -1,0 +1,147 @@
+---
+- name: Check if Grafana is installed
+  k8s_info:
+    kind: Deployment
+    name: prometheus-grafana
+    namespace: monitoring
+  register: grafana_deployment
+  ignore_errors: true
+
+- name: Install Prometheus Operator if not present
+  block:
+    - name: Add Prometheus Helm repository
+      kubernetes.core.helm_repository:
+        name: prometheus-community
+        repo_url: https://prometheus-community.github.io/helm-charts
+      when: grafana_deployment.resources is not defined or grafana_deployment.resources | length == 0
+
+    - name: Create monitoring namespace
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: monitoring
+      when: grafana_deployment.resources is not defined or grafana_deployment.resources | length == 0
+
+    - name: Deploy Prometheus Operator
+      kubernetes.core.helm:
+        name: prometheus
+        chart_ref: prometheus-community/kube-prometheus-stack
+        release_namespace: monitoring
+        values_files:
+          - "{{ playbook_dir }}/../../platform/monitoring/prometheus-values.yaml"
+      when: grafana_deployment.resources is not defined or grafana_deployment.resources | length == 0
+  when: grafana_deployment.resources is not defined or grafana_deployment.resources | length == 0
+
+- name: Create basic dashboard for DBaaS
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: dbaas-grafana-dashboard
+        namespace: monitoring
+        labels:
+          grafana_dashboard: "1"
+      data:
+        dbaas-dashboard.json: |
+          {
+            "annotations": {
+              "list": []
+            },
+            "editable": true,
+            "gnetId": null,
+            "graphTooltip": 0,
+            "id": null,
+            "links": [],
+            "panels": [
+              {
+                "datasource": "Prometheus",
+                "fieldConfig": {
+                  "defaults": {
+                    "color": {
+                      "mode": "palette-classic"
+                    },
+                    "custom": {
+                      "axisLabel": "",
+                      "axisPlacement": "auto",
+                      "barAlignment": 0,
+                      "drawStyle": "line",
+                      "fillOpacity": 10,
+                      "gradientMode": "none",
+                      "hideFrom": {
+                        "legend": false,
+                        "tooltip": false,
+                        "viz": false
+                      },
+                      "lineInterpolation": "linear",
+                      "lineWidth": 1,
+                      "pointSize": 5,
+                      "scaleDistribution": {
+                        "type": "linear"
+                      },
+                      "showPoints": "never",
+                      "spanNulls": true,
+                      "stacking": {
+                        "group": "A",
+                        "mode": "none"
+                      },
+                      "thresholdsStyle": {
+                        "mode": "off"
+                      }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": null
+                        }
+                      ]
+                    },
+                    "unit": "short"
+                  },
+                  "overrides": []
+                },
+                "gridPos": {
+                  "h": 8,
+                  "w": 12,
+                  "x": 0,
+                  "y": 0
+                },
+                "id": 2,
+                "options": {
+                  "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom"
+                  },
+                  "tooltip": {
+                    "mode": "single"
+                  }
+                },
+                "title": "Database Service Health",
+                "type": "timeseries"
+              }
+            ],
+            "refresh": "10s",
+            "schemaVersion": 30,
+            "style": "dark",
+            "tags": ["dbaas", "database", "kubernetes"],
+            "templating": {
+              "list": []
+            },
+            "time": {
+              "from": "now-3h",
+              "to": "now"
+            },
+            "timepicker": {},
+            "timezone": "",
+            "title": "HomeLab DBaaS Dashboard",
+            "uid": "dbaas-overview",
+            "version": 1
+          }

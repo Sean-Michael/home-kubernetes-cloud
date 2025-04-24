@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dbaas-frontend
+  namespace: {{ dbaas_namespace }}
+  labels:
+    app: dbaas
+    component: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dbaas
+      component: frontend
+  template:
+    metadata:
+      labels:
+        app: dbaas
+        component: frontend
+    spec:
+      containers:
+      - name: web
+        image: dbaas-frontend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        env:
+        - name: REACT_APP_API_URL
+          value: "http://{{ dbaas_domain }}/api"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dbaas-frontend
+  namespace: {{ dbaas_namespace }}
+  labels:
+    app: dbaas
+    component: frontend
+spec:
+  selector:
+    app: dbaas
+    component: frontend
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP

@@ -120,8 +120,6 @@ To configure a GPU-enabled worker node, run the following command:
 ansible-playbook -i inventory/hosts.ini [k3s-gpu-agent.yaml](http://_vscodecontentref_/0)
 ```
 
-Here’s an updated section for your README to document the GPU-enabled worker node playbook:
-
 ```markdown
 ### k3s-gpu-agent.yaml
 

@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dbaas-backend
+  namespace: {{ dbaas_namespace }}
+  labels:
+    app: dbaas
+    component: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dbaas
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: dbaas
+        component: backend
+    spec:
+      serviceAccountName: dbaas-backend
+      containers:
+      - name: api
+        image: dbaas-backend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5000
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        volumeMounts:
+        - name: data
+          mountPath: /app/data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: dbaas-backend-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dbaas-backend
+  namespace: {{ dbaas_namespace }}
+  labels:
+    app: dbaas
+    component: backend
+spec:
+  selector:
+    app: dbaas
+    component: backend
+  ports:
+  - port: 80
+    targetPort: 5000
+  type: ClusterIP

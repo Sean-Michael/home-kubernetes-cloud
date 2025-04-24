@@ -1,0 +1,12 @@
+---
+- name: Deploy HomeLab DBaaS
+  hosts: server
+  become: yes
+  vars:
+    dbaas_namespace: dbaas-system
+    dbaas_domain: dbaas.local
+    registry_host: localhost:5000
+    flux_namespace: flux-system
+
+  roles:
+    - dbaas

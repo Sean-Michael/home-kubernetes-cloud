@@ -1,0 +1,40 @@
+---
+- name: Ensure required packages are installed
+  apt:
+    name:
+      - docker.io
+      - python3-pip
+      - python3-venv
+      - virtualenv
+    state: present
+
+- name: Create virtualenv and install packages
+  pip:
+    name:
+      - flask
+      - flask-cors
+      - kubernetes
+      - pyyaml
+      - docker
+    virtualenv: /opt/venv
+    virtualenv_command: /usr/bin/python3 -m venv
+    state: present
+
+- name: Set python interpreter for subsequent tasks
+  set_fact:
+    ansible_python_interpreter: /opt/venv/bin/python
+
+- name: Import Flux setup tasks
+  import_tasks: flux_setup.yaml
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+    K8s_AUTH_HOST: "https://127.0.0.1:6443"
+
+- name: Import build images tasks
+  import_tasks: build_images.yaml
+
+- name: Import deployment tasks
+  import_tasks: deploy_manifests.yaml
+
+- name: Import monitoring setup tasks
+  import_tasks: monitoring.yaml

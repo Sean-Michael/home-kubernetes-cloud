@@ -1,0 +1,68 @@
+---
+- name: Create DBaaS and database namespaces
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ item }}"
+  loop:
+    - "{{ dbaas_namespace }}"
+    - "databases"
+
+- name: Create backend storage PVC
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: dbaas-backend-data
+        namespace: "{{ dbaas_namespace }}"
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+
+- name: Deploy RBAC
+  k8s:
+    state: present
+    definition: "{{ lookup('template', 'rbac.yaml.j2') | from_yaml }}"
+
+- name: Deploy backend
+  k8s:
+    state: present
+    definition: "{{ lookup('template', 'backend-deployment.yaml.j2') | from_yaml }}"
+
+- name: Deploy frontend
+  k8s:
+    state: present
+    definition: "{{ lookup('template', 'frontend-deployment.yaml.j2') | from_yaml }}"
+
+- name: Deploy ingress
+  k8s:
+    state: present
+    definition: "{{ lookup('template', 'ingress.yaml.j2') | from_yaml }}"
+
+- name: Wait for backend to be ready
+  k8s_info:
+    kind: Deployment
+    name: dbaas-backend
+    namespace: "{{ dbaas_namespace }}"
+  register: backend_deployment
+  until: backend_deployment.resources[0].status.readyReplicas is defined and backend_deployment.resources[0].status.readyReplicas == backend_deployment.resources[0].status.replicas
+  retries: 10
+  delay: 30
+
+- name: Wait for frontend to be ready
+  k8s_info:
+    kind: Deployment
+    name: dbaas-frontend
+    namespace: "{{ dbaas_namespace }}"
+  register: frontend_deployment
+  until: frontend_deployment.resources[0].status.readyReplicas is defined and frontend_deployment.resources[0].status.readyReplicas == frontend_deployment.resources[0].status.replicas
+  retries: 10
+  delay: 30
