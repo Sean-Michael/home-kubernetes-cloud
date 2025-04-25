@@ -1,0 +1,111 @@
+---
+- name: Deploy Rancher on K3s Cluster
+  hosts: server
+  become: yes
+  vars:
+    rancher_namespace: cattle-system
+    rancher_hostname: rancher.local
+    tls_secret_name: tls-rancher
+ 
+
+  tasks:
+    - name: Create Rancher namespace
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ rancher_namespace }}"
+
+    - name: Add Rancher Helm repository
+      community.general.helm_repository:
+        name: rancher-latest
+        repo_url: https://releases.rancher.com/server-charts/latest
+
+    - name: Update Helm repositories
+      command: helm repo update
+      args:
+        warn: false
+
+    - name: Install Cert-Manager
+      community.general.helm:
+        name: cert-manager
+        chart_ref: jetstack/cert-manager
+        release_namespace: cert-manager
+        create_namespace: true
+        values:
+          installCRDs: true
+
+    - name: Wait for Cert-Manager pods to be ready
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: cert-manager
+      register: cert_manager_pods
+      until: >
+        cert_manager_pods.resources | selectattr('status.phase', 'equalto', 'Running') | length == cert_manager_pods.resources | length
+      retries: 10
+      delay: 30
+
+    - name: Create TLS secret for Rancher
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: "{{ tls_secret_name }}"
+            namespace: "{{ rancher_namespace }}"
+          type: kubernetes.io/tls
+          data:
+            tls.crt: "{{ lookup('file', cert_path) | b64encode }}"
+            tls.key: "{{ lookup('file', key_path) | b64encode }}"
+
+    - name: Install Rancher using Helm
+      community.general.helm:
+        name: rancher
+        chart_ref: rancher-latest/rancher
+        release_namespace: "{{ rancher_namespace }}"
+        values:
+          hostname: "{{ rancher_hostname }}"
+          replicas: 1
+
+    - name: Wait for Rancher pods to be ready
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: "{{ rancher_namespace }}"
+      register: rancher_pods
+      until: >
+        rancher_pods.resources | selectattr('status.phase', 'equalto', 'Running') | length == rancher_pods.resources | length
+      retries: 10
+      delay: 30
+
+    - name: Create Rancher ingress resource
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: rancher
+            namespace: "{{ rancher_namespace }}"
+            annotations:
+              nginx.ingress.kubernetes.io/ssl-redirect: "true"
+              nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+          spec:
+            ingressClassName: nginx
+            rules:
+            - host: "{{ rancher_hostname }}"
+              http:
+                paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: rancher
+                      port:
+                        number: 443
+            tls:
+            - hosts:
+              - "{{ rancher_hostname }}"
+              secretName: "{{ tls_secret_name }}"

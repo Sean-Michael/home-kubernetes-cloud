@@ -3,7 +3,7 @@
   hosts: agents
   become: yes
   vars:
-    flannel_iface: ens3  # Based on your cloud-init network interface
+    flannel_iface: ens3  
   
   tasks:
     - name: Wait for cloud-init to complete
