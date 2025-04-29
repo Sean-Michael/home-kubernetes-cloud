@@ -3,3 +3,4 @@ infrastructure/terraform/terraform.tfstate*
 infrastructure/terraform/terraform.tfvars
 .vscode/
 secrets
+infrastructure/terraform/passwd
