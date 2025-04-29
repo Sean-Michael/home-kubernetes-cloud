@@ -11,7 +11,6 @@ provider "libvirt" {
     uri = "qemu:///system"
 }
 
-# Putting this near the top so it's easy to add/remove agents
 variable "agent_count" {
     description = "Number of K3s agent nodes"
     type = number
@@ -36,7 +35,6 @@ resource "libvirt_network" "k3s_network" {
     }
 }
 
-# Base OS image for the cluster nodes 
 resource "libvirt_volume" "ubuntu_base" {
     name = "ubuntu_base"
     pool = libvirt_pool.k3s_cluster.name
@@ -45,7 +43,6 @@ resource "libvirt_volume" "ubuntu_base" {
 
 }
 
-# server domain volume
 resource "libvirt_volume" "k3s_server" {
     name = "k3s_server.qcow2"
     base_volume_id = libvirt_volume.ubuntu_base.id 
@@ -53,7 +50,6 @@ resource "libvirt_volume" "k3s_server" {
     size = 21474836480    # 20GB
 }
 
-# agents domain volumes
 resource "libvirt_volume" "k3s_agent" {
     count = var.agent_count
     name = "k3s_agent_${count.index}.qcow2"
@@ -68,7 +64,6 @@ variable "ssh_public_key_path" {
     default = "~/.ssh/id_ed25519.pub"
 }
 
-# cloud-init ISO to customize domain on boot up
 resource "libvirt_cloudinit_disk" "server_cloudinit" {
     name = "server-cloudinit.iso"
     pool = libvirt_pool.k3s_cluster.name
@@ -82,7 +77,6 @@ resource "libvirt_cloudinit_disk" "server_cloudinit" {
     })
 }
 
-# cloud-init ISO to customize domain on boot up
 resource "libvirt_cloudinit_disk" "agent_cloudinit" {
     count = var.agent_count
     pool = libvirt_pool.k3s_cluster.name
@@ -97,7 +91,6 @@ resource "libvirt_cloudinit_disk" "agent_cloudinit" {
     })
 }
 
-# server domain resource
 resource "libvirt_domain" "k3s_server" {
     name = "k3s_server"
     description = "server k3s node"
@@ -128,7 +121,6 @@ resource "libvirt_domain" "k3s_server" {
     }
 }
 
-# agents domain resource
 resource "libvirt_domain" "k3s_agent" {
     count = var.agent_count
     name = "k3s_agent-${count.index}"
