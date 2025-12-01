@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gpu-node-caliban-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  gpu-node-caliban.json: |
+    {
+      "title": "GPU Node - Caliban",
+      "uid": "gpu-node-caliban",
+      "tags": ["gpu", "nvidia", "caliban"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "refresh": "10s",
+      "panels": [
+        {
+          "id": 1,
+          "title": "GPU Utilization %",
+          "type": "gauge",
+          "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+          "targets": [{"expr": "max(DCGM_FI_DEV_GPU_UTIL{Hostname=\"caliban\"}) by (gpu)", "legendFormat": "GPU {{gpu}}"}],
+          "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 70}, {"color": "red", "value": 90}]}}}
+        },
+        {
+          "id": 2,
+          "title": "GPU Temperature",
+          "type": "gauge",
+          "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
+          "targets": [{"expr": "max(DCGM_FI_DEV_GPU_TEMP{Hostname=\"caliban\"}) by (gpu)", "legendFormat": "GPU {{gpu}}"}],
+          "fieldConfig": {"defaults": {"unit": "celsius", "min": 0, "max": 100, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 70}, {"color": "red", "value": 85}]}}}
+        },
+        {
+          "id": 3,
+          "title": "Memory Utilization %",
+          "type": "gauge",
+          "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+          "targets": [{"expr": "max(DCGM_FI_DEV_MEM_COPY_UTIL{Hostname=\"caliban\"}) by (gpu)", "legendFormat": "GPU {{gpu}}"}],
+          "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 70}, {"color": "red", "value": 90}]}}}
+        },
+        {
+          "id": 4,
+          "title": "Power Usage",
+          "type": "gauge",
+          "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+          "targets": [{"expr": "max(DCGM_FI_DEV_POWER_USAGE{Hostname=\"caliban\"}) by (gpu)", "legendFormat": "GPU {{gpu}}"}],
+          "fieldConfig": {"defaults": {"unit": "watt", "min": 0, "max": 215, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 150}, {"color": "red", "value": 200}]}}}
+        },
+        {
+          "id": 5,
+          "title": "GPU Utilization Over Time",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+          "targets": [{"expr": "max(DCGM_FI_DEV_GPU_UTIL{Hostname=\"caliban\"}) by (gpu)", "legendFormat": "GPU {{gpu}}"}],
+          "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}}
+        },
+        {
+          "id": 6,
+          "title": "GPU Temperature Over Time",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+          "targets": [{"expr": "max(DCGM_FI_DEV_GPU_TEMP{Hostname=\"caliban\"}) by (gpu)", "legendFormat": "GPU {{gpu}}"}],
+          "fieldConfig": {"defaults": {"unit": "celsius", "min": 0, "max": 100, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "red", "value": 85}]}}}
+        },
+        {
+          "id": 7,
+          "title": "VRAM Usage (MiB)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+          "targets": [
+            {"expr": "max(DCGM_FI_DEV_FB_USED{Hostname=\"caliban\"}) by (gpu)", "legendFormat": "Used"},
+            {"expr": "max(DCGM_FI_DEV_FB_FREE{Hostname=\"caliban\"}) by (gpu)", "legendFormat": "Free"}
+          ],
+          "fieldConfig": {"defaults": {"unit": "mibytes"}}
+        },
+        {
+          "id": 8,
+          "title": "Power Usage Over Time",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+          "targets": [{"expr": "max(DCGM_FI_DEV_POWER_USAGE{Hostname=\"caliban\"}) by (gpu)", "legendFormat": "GPU {{gpu}}"}],
+          "fieldConfig": {"defaults": {"unit": "watt"}}
+        }
+      ]
+    }
