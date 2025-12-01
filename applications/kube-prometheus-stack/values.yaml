@@ -1,6 +1,12 @@
 # Grafana configuration
 grafana:
   enabled: true
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      folder: /tmp/dashboards
+      searchNamespace: ALL
   admin:
     existingSecret: grafana-admin-credentials
     userKey: admin-user

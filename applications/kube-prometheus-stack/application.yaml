@@ -15,6 +15,9 @@ spec:
     - repoURL: https://github.com/Sean-Michael/home-kubernetes-cloud.git
       targetRevision: HEAD
       ref: values
+    - repoURL: https://github.com/Sean-Michael/home-kubernetes-cloud.git
+      targetRevision: HEAD
+      path: applications/kube-prometheus-stack/dashboards
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
