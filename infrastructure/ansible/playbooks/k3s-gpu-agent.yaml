@@ -1,80 +1,186 @@
 ---
 - name: Configure K3s GPU Agent
   hosts: gpu_nodes
-  become: yes
-  vars_files:
-    - "../group_vars/gpu_nodes/vault.yaml"
+  become: true
   vars:
-    flannel_iface: "virbr1"  # Use default interface for host
-  
-  tasks:
+    flannel_iface: "virbr1"
+    nvidia_device_plugin_version: "0.17.0"
+    k3s_server_host: "the-rock"
+    containerd_config_dir: "/var/lib/rancher/k3s/agent/etc/containerd"
 
+  tasks:
     - name: Check if NVIDIA drivers are installed
       command: nvidia-smi
       register: nvidia_smi_result
       ignore_errors: true
       changed_when: false
 
-    - name: Ensure NVIDIA drivers are installed
+    - name: Fail if NVIDIA drivers are not installed
       fail:
-        msg: "NVIDIA drivers are not installed or not functioning properly. Please install them first."
+        msg: "NVIDIA drivers are not installed. Please install them first."
       when: nvidia_smi_result.rc != 0
+
+    - name: Check if NVIDIA Container Toolkit is installed
+      command: which nvidia-container-runtime
+      register: nvidia_runtime_check
+      ignore_errors: true
+      changed_when: false
 
     - name: Add NVIDIA apt GPG key
       apt_key:
         url: https://nvidia.github.io/libnvidia-container/gpgkey
         state: present
         keyring: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+      when: nvidia_runtime_check.rc != 0
 
     - name: Add NVIDIA Container Toolkit repository
       apt_repository:
         repo: "deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://nvidia.github.io/libnvidia-container/stable/deb/amd64 /"
         state: present
         filename: nvidia-container-toolkit
-
-    - name: Update apt repository
-      apt:
-        update_cache: yes
+      when: nvidia_runtime_check.rc != 0
 
     - name: Install NVIDIA Container Toolkit
       apt:
         name: nvidia-container-toolkit
         state: present
+        update_cache: yes
+      when: nvidia_runtime_check.rc != 0
 
-    - name: Configure NVIDIA Container Toolkit
-      command: nvidia-ctk runtime configure --runtime=containerd
-      register: nvidia_ctk_result
-      changed_when: "'Configuration complete!' in nvidia_ctk_result.stdout"
+    - name: Fetch k3s token from server
+      delegate_to: "{{ k3s_server_host }}"
+      become: true
+      slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: node_token_result
 
-    - name: Restart containerd if config changed
-      systemd:
-        name: containerd
-        state: restarted
-      when: nvidia_ctk_result.changed
+    - name: Set k3s facts
+      set_fact:
+        k3s_token: "{{ node_token_result.content | b64decode | trim }}"
+        k3s_url: "https://{{ hostvars[k3s_server_host]['ansible_host'] }}:6443"
+
+    - name: Check if k3s is already installed
+      stat:
+        path: /var/lib/rancher/k3s/agent/kubelet.kubeconfig
+      register: k3s_installed
 
     - name: Download K3s installation script
       get_url:
         url: https://get.k3s.io
         dest: /tmp/k3s-install.sh
         mode: '0755'
+      when: not k3s_installed.stat.exists
 
-    - name: Install K3s agent with NVIDIA configuration
+    - name: Install K3s agent
       environment:
-        K3S_URL: "https://{{ hostvars['k3s-server']['ansible_host'] }}:6443"
+        K3S_URL: "{{ k3s_url }}"
         K3S_TOKEN: "{{ k3s_token }}"
-      command: >
-        /tmp/k3s-install.sh
-        --flannel-iface="virbr1"
-        --node-label="gpu=true"
-        --kubelet-arg="feature-gates=DevicePlugins=true"
-      args:
-        creates: /var/lib/rancher/k3s/agent/kubelet.kubeconfig
-      
+        INSTALL_K3S_EXEC: "agent --flannel-iface={{ flannel_iface }} --node-label=gpu=true"
+      command: /tmp/k3s-install.sh
+      when: not k3s_installed.stat.exists
+
+    - name: Wait for k3s agent to create containerd directory
+      wait_for:
+        path: "{{ containerd_config_dir }}"
+        state: present
+        timeout: 60
+      when: not k3s_installed.stat.exists
+
+    - name: Ensure containerd config directory exists
+      file:
+        path: "{{ containerd_config_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Deploy containerd config template
+      template:
+        src: templates/k3s-containerd-nvidia.toml.tmpl.j2
+        dest: "{{ containerd_config_dir }}/config.toml.tmpl"
+        mode: '0644'
+      register: containerd_config
+
+    - name: Restart k3s-agent
+      systemd:
+        name: k3s-agent
+        state: restarted
+        daemon_reload: yes
+      when: containerd_config.changed
+
+    - name: Wait for k3s-agent to be ready
+      wait_for:
+        port: 10250
+        host: 127.0.0.1
+        timeout: 60
+      when: containerd_config.changed
+
     - name: Remove temporary files
       file:
         path: "{{ item }}"
         state: absent
-      with_items:
-        - /tmp/k3s_token
+      loop:
         - /tmp/k3s-install.sh
 
+- name: Deploy NVIDIA Device Plugin
+  hosts: server
+  become: true
+  vars:
+    nvidia_device_plugin_version: "0.17.0"
+
+  tasks:
+    - name: Wait for GPU node to be ready
+      command: kubectl get node caliban -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+      register: node_ready
+      until: node_ready.stdout == "True"
+      retries: 30
+      delay: 10
+      changed_when: false
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+    - name: Create temporary directory for manifests
+      file:
+        path: /tmp/k3s-manifests
+        state: directory
+        mode: '0755'
+
+    - name: Deploy NVIDIA device plugin manifest
+      template:
+        src: templates/nvidia-device-plugin-daemonset.yaml.j2
+        dest: /tmp/k3s-manifests/nvidia-device-plugin.yaml
+        mode: '0644'
+
+    - name: Apply NVIDIA device plugin
+      command: kubectl apply -f /tmp/k3s-manifests/nvidia-device-plugin.yaml
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      register: device_plugin_result
+      changed_when: "'created' in device_plugin_result.stdout or 'configured' in device_plugin_result.stdout"
+
+    - name: Wait for device plugin pod to be running
+      command: >
+        kubectl get pods -n kube-system
+        -l name=nvidia-device-plugin-ds
+        --field-selector spec.nodeName=caliban
+        -o jsonpath='{.items[0].status.phase}'
+      register: plugin_status
+      until: plugin_status.stdout == "Running"
+      retries: 30
+      delay: 10
+      changed_when: false
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+    - name: Verify GPU is exposed
+      command: kubectl get node caliban -o jsonpath='{.status.capacity.nvidia\.com/gpu}'
+      register: gpu_capacity
+      until: gpu_capacity.stdout | int > 0
+      retries: 12
+      delay: 5
+      changed_when: false
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+    - name: Cleanup temporary manifests
+      file:
+        path: /tmp/k3s-manifests
+        state: absent
