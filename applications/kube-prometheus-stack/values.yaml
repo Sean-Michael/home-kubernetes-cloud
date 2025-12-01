@@ -1,0 +1,74 @@
+# Grafana configuration
+grafana:
+  enabled: true
+  admin:
+    existingSecret: grafana-admin-credentials
+    userKey: admin-user
+    passwordKey: admin-password
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - grafana.caliban.com
+    path: /
+    pathType: Prefix
+
+# Prometheus configuration
+prometheus:
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - prometheus.caliban.com
+    paths:
+      - /
+    pathType: Prefix
+  prometheusSpec:
+    retention: 7d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+
+# Alertmanager configuration
+alertmanager:
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - alertmanager.caliban.com
+    paths:
+      - /
+    pathType: Prefix
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 1Gi
+
+# Node exporter for host metrics
+nodeExporter:
+  enabled: true
+
+# Prometheus operator
+prometheusOperator:
+  enabled: true
+
+kubeEtcd:
+  enabled: false
+
+kubeProxy:
+  enabled: false
+
+kubeControllerManager:
+  enabled: false
+
+kubeScheduler:
+  enabled: false
+
