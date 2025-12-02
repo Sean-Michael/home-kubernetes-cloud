@@ -1,0 +1,55 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: pgvector
+  namespace: cnpg-system
+spec:
+  description: "PostgreSQL with pgvector for RAG embeddings"
+  imageName: ghcr.io/cloudnative-pg/postgresql:17
+  instances: 1
+
+  postgresql:
+    parameters:
+      shared_buffers: 256MB
+      effective_cache_size: 768MB
+      work_mem: 64MB
+      maintenance_work_mem: 128MB
+      max_parallel_workers_per_gather: "2"
+      max_parallel_workers: "4"
+      log_min_duration_statement: "1000"
+    shared_preload_libraries:
+      - "vector"
+
+  bootstrap:
+    initdb:
+      database: ragdb
+      owner: watcher
+      postInitSQL:
+        - CREATE EXTENSION IF NOT EXISTS vector
+        - CREATE EXTENSION IF NOT EXISTS pg_trgm
+
+  storage:
+    storageClass: local-path
+    size: 10Gi
+
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "2"
+
+  managed:
+    services:
+      additional:
+        - selectorType: rw
+          serviceTemplate:
+            metadata:
+              name: pgvector-lb
+            spec:
+              type: LoadBalancer
+              ports:
+                - name: postgres
+                  port: 5432
+                  targetPort: 5432
