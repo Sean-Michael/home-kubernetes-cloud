@@ -5,12 +5,12 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  source:
-    repoURL: https://github.com/Sean-Michael/home-kubernetes-cloud.git
-    targetRevision: HEAD
-    path: applications/cloudnativepg
-    directory:
-      include: "pgvector.yaml"
+  sources:
+    - repoURL: https://github.com/Sean-Michael/home-kubernetes-cloud.git
+      targetRevision: HEAD
+      path: applications/cloudnativepg
+      directory:
+        include: "pgvector.yaml"
   destination:
     server: https://kubernetes.default.svc
     namespace: cnpg-system
@@ -21,3 +21,24 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pgvector-dashboard
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Sean-Michael/home-kubernetes-cloud.git
+    targetRevision: HEAD
+    path: applications/cloudnativepg
+    directory:
+      include: "dashboard.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
