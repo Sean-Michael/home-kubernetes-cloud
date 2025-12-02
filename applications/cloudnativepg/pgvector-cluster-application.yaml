@@ -38,14 +38,7 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
-      include: "pgvector.yaml"
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: cnpg-system
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true
