@@ -23,7 +23,7 @@ spec:
   bootstrap:
     initdb:
       database: ragdb
-      owner: langchain
+      owner: watcher
       postInitSQL:
         - CREATE EXTENSION IF NOT EXISTS vector
         - CREATE EXTENSION IF NOT EXISTS pg_trgm
