@@ -10,8 +10,8 @@
 - [x] Utilize Terraform templates to integrate with ansible, auto-updating inventory.
 - [x] Create basic Ansible playbooks to configure VMs as k3s nodes using rancher
 - [x] Create playbook to setup ssh/dns.
-- [ ] Configure special node to utilize GPU resources through the Hypervizor
-- [ ] Setup Ingress controllers
+- [x] Configure special node to utilize GPU resources through the Hypervizor
+- [x] Setup Ingress controllers
 - [ ] Configure persistent storage
 - [ ] Observability monitoring with Prometheus & Grafana
 - [ ] Logging with ?
@@ -30,7 +30,7 @@
 
 - [x] Setup Kubernetes cluster using k3s: server (control-plane) + 2 agents.
 - [ ] Setup Relational Database (Postgres?)
-- [ ] Utilize Helm charts for package deployment.
+- [x] Utilize Helm charts for package deployment.
 - [ ] Implement ArgoCD GitOps.
 
 ### Extension - Future learnings
