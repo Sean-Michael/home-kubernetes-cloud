@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ray-operator
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/ray-project/kuberay
+      targetRevision: v1.4.2
+      path: helm-chart/kuberay-operator
+      helm:
+        valueFiles:
+          - $values/applications/KubeRay/values.yaml
+    - repoURL: https://github.com/Sean-Michael/home-kubernetes-cloud.git
+      targetRevision: HEAD
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ray-operator
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
