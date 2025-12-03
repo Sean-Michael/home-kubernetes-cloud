@@ -17,12 +17,8 @@ spec:
   ignoreDifferences:
     - group: postgresql.cnpg.io
       kind: Cluster
-      jsonPointers:
-        - /spec/instances
       jqPathExpressions:
-        - .spec.postgresql.parameters
-        - .spec.bootstrap
-        - .status
+        - .spec
   syncPolicy:
     automated:
       prune: true

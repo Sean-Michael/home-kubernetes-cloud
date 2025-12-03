@@ -31,6 +31,8 @@ prometheus:
     pathType: Prefix
   prometheusSpec:
     retention: 7d
+    podMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
     storageSpec:
       volumeClaimTemplate:
         spec:
