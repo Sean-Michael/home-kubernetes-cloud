@@ -19,6 +19,9 @@ spec:
     server: https://kubernetes.default.svc
     namespace: ray-operator
   syncPolicy:
+    automated:
+      selfHeal: true
+      autoPrune: true
     syncOptions:
     - CreateNamespace=true
     - ServerSideApply=true
