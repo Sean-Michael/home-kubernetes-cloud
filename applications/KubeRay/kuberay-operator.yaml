@@ -7,7 +7,7 @@ spec:
   project: default
   sources:
     - repoURL: https://github.com/ray-project/kuberay
-      targetRevision: v1.4.2
+      targetRevision: 2.52.1
       path: helm-chart/kuberay-operator
       helm:
         valueFiles:
