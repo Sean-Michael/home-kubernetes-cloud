@@ -2,3 +2,14 @@ metrics:
   serviceMonitor:
     enabled: true
 crNamespacedRbacEnable: false
+
+affinity:
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        preference:
+          matchExpressions:
+            - key: gpu
+              operator: NotIn
+              values:
+                - "true"
