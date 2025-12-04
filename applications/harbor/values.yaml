@@ -1,0 +1,68 @@
+externalURL: http://harbor.caliban.com
+
+expose:
+  type: ingress
+  tls:
+    enabled: false
+  ingress:
+    hosts:
+      core: harbor.caliban.com
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: "0"
+
+persistence:
+  enabled: true
+  resourcePolicy: "keep"
+  persistentVolumeClaim:
+    registry:
+      storageClass: local-path
+      size: 10Gi
+    jobservice:
+      jobLog:
+        storageClass: local-path
+        size: 1Gi
+    database:
+      storageClass: local-path
+      size: 5Gi
+    redis:
+      storageClass: local-path
+      size: 1Gi
+    trivy:
+      storageClass: local-path
+      size: 5Gi
+
+database:
+  type: internal
+
+redis:
+  type: internal
+
+trivy:
+  enabled: true
+
+metrics:
+  enabled: true
+  core:
+    path: /metrics
+    port: 8001
+  registry:
+    path: /metrics
+    port: 8001
+  jobservice:
+    path: /metrics
+    port: 8001
+  exporter:
+    path: /metrics
+    port: 8001
+  serviceMonitor:
+    enabled: true
+    additionalLabels:
+      release: kube-prometheus-stack
+
+cache:
+  enabled: true
+  expireHours: 24
+
+updateStrategy:
+  type: Recreate
