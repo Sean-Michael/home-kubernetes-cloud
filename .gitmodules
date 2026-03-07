@@ -1,3 +1,6 @@
 [submodule "applications/dbaas"]
 	path = applications/dbaas
 	url = https://github.com/Sean-Michael/home-dbaas.git
+[submodule "applications/home-mlops"]
+	path = applications/home-mlops
+	url = https://github.com/Sean-Michael/home-mlops.git
