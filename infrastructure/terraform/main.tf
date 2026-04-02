@@ -68,7 +68,7 @@ resource "libvirt_cloudinit_disk" "server_cloudinit" {
     name = "server-cloudinit.iso"
     pool = libvirt_pool.k3s_cluster.name
     user_data = templatefile("${path.module}/cloud_init.tpl", {
-        hostname = "k3s-server"
+        hostname = "the-rock"
         ssh_key = file(var.ssh_public_key_path)
     })
     network_config = templatefile("${path.module}/network_config.tpl", {
@@ -82,7 +82,7 @@ resource "libvirt_cloudinit_disk" "agent_cloudinit" {
     pool = libvirt_pool.k3s_cluster.name
     name = "agent-${count.index}-cloudinit.iso"
     user_data = templatefile("${path.module}/cloud_init.tpl", {
-        hostname = "k3s-agent-${count.index}"
+        hostname = count.index == 0 ? "deathwing-knight" : "ravenwing-black-knight"
         ssh_key = file(var.ssh_public_key_path)
     })
     network_config = templatefile("${path.module}/network_config.tpl", {
@@ -92,8 +92,8 @@ resource "libvirt_cloudinit_disk" "agent_cloudinit" {
 }
 
 resource "libvirt_domain" "k3s_server" {
-    name = "k3s_server"
-    description = "server k3s node"
+    name = "the-rock"
+    description = "The Rock - Dark Angels fortress monastery (k3s server node)"
     memory = "6144" # 6GB
     vcpu = 2
 
@@ -123,8 +123,8 @@ resource "libvirt_domain" "k3s_server" {
 
 resource "libvirt_domain" "k3s_agent" {
     count = var.agent_count
-    name = "k3s_agent-${count.index}"
-    description = "agent k3s node"
+    name = count.index == 0 ? "deathwing-knight" : "ravenwing-black-knight"
+    description = count.index == 0 ? "Deathwing Knight - Elite Terminator (k3s agent)" : "Ravenwing Black Knight - Elite Bike Squadron (k3s agent)"
     memory = "4096" # 4GB
     vcpu = 1
     

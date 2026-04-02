@@ -17,30 +17,30 @@ else
     echo "- k3s_network already running."
 fi
 
-echo "=== k3s_server (control plane) === "
-if ! sudo virsh list | grep "k3s_server"; then
-    sudo virsh start k3s_server
-    echo "Server VM started."
+echo "=== the-rock (control plane) === "
+if ! sudo virsh list | grep "the-rock"; then
+    sudo virsh start the-rock
+    echo "the-rock started."
 else
-    echo "Server VM already running."
+    echo "the-rock already running."
 fi
 
 sleep 30
 
-echo "=== k3s_agent-0 ==="
-if ! sudo virsh list | grep "k3s_agent-0"; then 
-    sudo virsh start k3s_agent-0
-    echo "k3s_agent-0 started."
+echo "=== deathwing-knight ==="
+if ! sudo virsh list | grep "deathwing-knight"; then
+    sudo virsh start deathwing-knight
+    echo "deathwing-knight started."
 else
-    echo "k3s_agent-0 already running."
+    echo "deathwing-knight already running."
 fi
 
-echo "=== k3s_agent-1 ==="
-if ! sudo virsh list | grep "k3s_agent-1"; then 
-    sudo virsh start k3s_agent-1
-    echo "k3s_agent-1 started."
+echo "=== ravenwing-black-knight ==="
+if ! sudo virsh list | grep "ravenwing-black-knight"; then
+    sudo virsh start ravenwing-black-knight
+    echo "ravenwing-black-knight started."
 else
-    echo "k3s_agent-1 already running."
+    echo "ravenwing-black-knight already running."
 fi
 
 echo ""
