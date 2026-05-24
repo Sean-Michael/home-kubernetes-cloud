@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-cni
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://istio-release.storage.googleapis.com/charts
+    chart: cni
+    targetRevision: 1.30.0
+    helm:
+      values: |
+        # Required for ambient. global.platform=k3s sets the k3s CNI conf/bin
+        # paths (/var/lib/rancher/k3s/...) so istio-cni chains after flannel
+        # instead of breaking pod networking.
+        profile: ambient
+        global:
+          platform: k3s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

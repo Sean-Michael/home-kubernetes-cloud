@@ -97,7 +97,13 @@ resource "libvirt_domain" "k3s_server" {
     memory = "6144" # 6GB
     vcpu = 2
 
-    cloudinit = libvirt_cloudinit_disk.server_cloudinit.id 
+    # Expose the host CPU's full feature set (incl. x86-64-v2) to the guest.
+    # Required by Istio 1.30+ binaries; the default qemu64 model lacks it.
+    cpu {
+        mode = "host-passthrough"
+    }
+
+    cloudinit = libvirt_cloudinit_disk.server_cloudinit.id
 
     network_interface {
         network_id = libvirt_network.k3s_network.id 
@@ -127,7 +133,13 @@ resource "libvirt_domain" "k3s_agent" {
     description = count.index == 0 ? "Deathwing Knight - Elite Terminator (k3s agent)" : "Ravenwing Black Knight - Elite Bike Squadron (k3s agent)"
     memory = "4096" # 4GB
     vcpu = 1
-    
+
+    # Expose the host CPU's full feature set (incl. x86-64-v2) to the guest.
+    # Required by Istio 1.30+ binaries; the default qemu64 model lacks it.
+    cpu {
+        mode = "host-passthrough"
+    }
+
     cloudinit = libvirt_cloudinit_disk.agent_cloudinit[count.index].id
 
     network_interface {
