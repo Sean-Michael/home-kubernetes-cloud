@@ -1,0 +1,27 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: harbor
+  namespace: harbor-system
+spec:
+  parentRefs:
+    - name: caliban-gateway
+      namespace: istio-ingress
+  hostnames:
+    - harbor.tail4dd976.ts.net
+  rules:
+    # API / registry / token paths go to harbor-core; everything else to the
+    # portal UI. Mirrors the upstream Harbor ingress path split.
+    - matches:
+        - path: { type: PathPrefix, value: /api/ }
+        - path: { type: PathPrefix, value: /service/ }
+        - path: { type: PathPrefix, value: /v2/ }
+        - path: { type: PathPrefix, value: /c/ }
+      backendRefs:
+        - name: harbor-core
+          port: 80
+    - matches:
+        - path: { type: PathPrefix, value: / }
+      backendRefs:
+        - name: harbor-portal
+          port: 80

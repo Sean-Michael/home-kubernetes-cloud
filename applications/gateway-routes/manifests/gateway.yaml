@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: istio-ingress
+---
+# Shared in-cluster Gateway (Istio GatewayClass). North-south TLS for the
+# tailnet is handled by a separate tailscale-class Gateway (see Stage 4);
+# this one is the internal/LAN entrypoint and the verification target.
+# ClusterIP (not LoadBalancer) so it doesn't fight nginx-ingress for the
+# host's port 80 via klipper while both run in parallel during migration.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: caliban-gateway
+  namespace: istio-ingress
+  annotations:
+    networking.istio.io/service-type: ClusterIP
+spec:
+  gatewayClassName: istio
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: "*.tail4dd976.ts.net"
+      allowedRoutes:
+        namespaces:
+          from: All
