@@ -1,0 +1,26 @@
+# Namespaces enrolled in the Istio ambient mesh (L4 mTLS + telemetry).
+# Applied with ServerSideApply so ArgoCD owns only the dataplane-mode label
+# and coexists with each app's CreateNamespace=true.
+#
+# NOT enrolled, on purpose:
+#   - argocd: argocd-redis breaks under ztunnel redirection (persistent
+#     "connection refused" on :6379). The GitOps controller gains little
+#     from meshing; left out.
+#   - cnpg-system / KubeRay / vllm / GPU: stateful DB + ML workloads not yet
+#     validated under ambient. Opt them in later by adding them here.
+#
+# Enrolling a namespace briefly resets in-flight TCP connections as ztunnel
+# takes over (harbor-core -> postgres blipped then recovered). Expected.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    istio.io/dataplane-mode: ambient
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: harbor-system
+  labels:
+    istio.io/dataplane-mode: ambient
