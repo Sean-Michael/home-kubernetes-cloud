@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tailscale-operator
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://pkgs.tailscale.com/helmcharts
+    chart: tailscale-operator
+    targetRevision: "*"
+    helm:
+      values: |
+        # OAuth creds are NOT stored here. The chart reads them from a
+        # pre-created secret named "operator-oauth" in the tailscale
+        # namespace (see operator-oauth-secret.example.yaml). Keeps secrets
+        # out of Git while staying GitOps-managed for everything else.
+        oauth: {}
+        # Tailnet ACL tag the operator's own node is tagged with.
+        operatorConfig:
+          defaultTags:
+            - "tag:k8s-operator"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tailscale
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

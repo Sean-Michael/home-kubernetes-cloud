@@ -1,0 +1,98 @@
+# Tailnet doorway: one Tailscale Ingress per app. Tailscale terminates TLS
+# with an auto-provisioned *.tail4dd976.ts.net cert and forwards the request
+# (Host header preserved) to the shared Istio gateway, which routes by host
+# via the HTTPRoutes in gateway-routes/. Net effect:
+#   https://grafana.tail4dd976.ts.net  ->  TS node  ->  caliban-gateway-istio
+#   ->  HTTPRoute(grafana) ->  grafana svc   (and meshed once ambient is on)
+#
+# tailscale.com/hostname sets the tailnet device name -> the *.ts.net FQDN.
+# tls.hosts[0] must match it so Tailscale issues the cert for that name.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-ts
+  namespace: istio-ingress
+  annotations:
+    tailscale.com/hostname: argocd
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: caliban-gateway-istio
+      port:
+        number: 80
+  tls:
+    - hosts:
+        - argocd
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: harbor-ts
+  namespace: istio-ingress
+  annotations:
+    tailscale.com/hostname: harbor
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: caliban-gateway-istio
+      port:
+        number: 80
+  tls:
+    - hosts:
+        - harbor
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-ts
+  namespace: istio-ingress
+  annotations:
+    tailscale.com/hostname: grafana
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: caliban-gateway-istio
+      port:
+        number: 80
+  tls:
+    - hosts:
+        - grafana
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prometheus-ts
+  namespace: istio-ingress
+  annotations:
+    tailscale.com/hostname: prometheus
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: caliban-gateway-istio
+      port:
+        number: 80
+  tls:
+    - hosts:
+        - prometheus
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: alertmanager-ts
+  namespace: istio-ingress
+  annotations:
+    tailscale.com/hostname: alertmanager
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: caliban-gateway-istio
+      port:
+        number: 80
+  tls:
+    - hosts:
+        - alertmanager
