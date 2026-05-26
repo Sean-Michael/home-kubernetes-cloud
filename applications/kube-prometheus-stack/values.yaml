@@ -11,24 +11,21 @@ grafana:
     existingSecret: grafana-admin-credentials
     userKey: admin-user
     passwordKey: admin-password
+  # Tailnet-only: reached via the Istio gateway + Tailscale Ingress, not nginx.
   ingress:
-    enabled: true
-    ingressClassName: nginx
-    hosts:
-      - grafana.caliban.com
-    path: /
-    pathType: Prefix
+    enabled: false
+  # Behind the tailnet hostname Grafana must generate absolute URLs (login redirect,
+  # OAuth, asset paths) against its real external host, not the in-cluster name.
+  grafana.ini:
+    server:
+      root_url: https://grafana.tail4dd976.ts.net
+      serve_from_sub_path: false
 
 # Prometheus configuration
 prometheus:
+  # Tailnet-only: reached via the Istio gateway + Tailscale Ingress, not nginx.
   ingress:
-    enabled: true
-    ingressClassName: nginx
-    hosts:
-      - prometheus.caliban.com
-    paths:
-      - /
-    pathType: Prefix
+    enabled: false
   prometheusSpec:
     retention: 7d
     podMonitorSelectorNilUsesHelmValues: false
@@ -43,14 +40,9 @@ prometheus:
 
 # Alertmanager configuration
 alertmanager:
+  # Tailnet-only: reached via the Istio gateway + Tailscale Ingress, not nginx.
   ingress:
-    enabled: true
-    ingressClassName: nginx
-    hosts:
-      - alertmanager.caliban.com
-    paths:
-      - /
-    pathType: Prefix
+    enabled: false
   alertmanagerSpec:
     storage:
       volumeClaimTemplate:

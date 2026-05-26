@@ -1,15 +1,15 @@
-externalURL: http://harbor.caliban.com
+# Tailnet-only: external access is via the Istio Gateway + Tailscale Ingress
+# (harbor.tail4dd976.ts.net). TLS is terminated by the Tailscale proxy, so Harbor
+# itself speaks plain HTTP behind the gateway, but externalURL must be https so the
+# token service and docker client use the correct scheme.
+externalURL: https://harbor.tail4dd976.ts.net
 
 expose:
-  type: ingress
+  # clusterIP: no nginx Ingress; the harbor-core/harbor-portal services are still
+  # created and are fronted by the shared Istio caliban-gateway HTTPRoute.
+  type: clusterIP
   tls:
     enabled: false
-  ingress:
-    hosts:
-      core: harbor.caliban.com
-    className: nginx
-    annotations:
-      nginx.ingress.kubernetes.io/proxy-body-size: "0"
 
 persistence:
   enabled: true
