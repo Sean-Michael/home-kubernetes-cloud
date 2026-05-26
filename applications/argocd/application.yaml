@@ -26,9 +26,7 @@ spec:
   syncPolicy:
     automated:
       selfHeal: true
-      # prune intentionally OFF until the first adoption sync is verified — avoids
-      # deleting any resource the chart happens not to render. Flip on once healthy.
-      prune: false
+      prune: true
     syncOptions:
       # argocd CRDs are large; SSA avoids the last-applied-config annotation size limit.
       - ServerSideApply=true
