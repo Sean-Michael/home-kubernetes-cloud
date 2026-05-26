@@ -15,11 +15,35 @@ grafana:
   ingress:
     enabled: false
   # Behind the tailnet hostname Grafana must generate absolute URLs (login redirect,
-  # OAuth, asset paths) against its real external host, not the in-cluster name.
+  # asset paths) against its real external host, not the in-cluster name.
   grafana.ini:
     server:
       root_url: https://grafana.tail4dd976.ts.net
       serve_from_sub_path: false
+    # SSO via Tailscale identity. The Tailscale operator Ingress injects
+    # Tailscale-User-Login (your tailnet email) and these headers survive the hop
+    # through the Istio gateway (verified). Grafana trusts that header and auto-logs
+    # you in as Admin -- no password, no external IdP. The tailnet is the login.
+    auth.proxy:
+      enabled: true
+      header_name: Tailscale-User-Login
+      header_property: username
+      auto_sign_up: true
+      # Populate display name + email on the auto-created user from the other headers.
+      headers: Name:Tailscale-User-Name Email:Tailscale-User-Login
+      # Only accept the identity header from inside the cluster pod network, i.e. from
+      # the Istio gateway -- not from arbitrary clients. (The Tailscale proxy itself
+      # strips any client-supplied Tailscale-User-* headers, so external spoofing is
+      # already prevented; this guards the in-cluster hop.)
+      whitelist: 10.42.0.0/16
+      sync_ttl: 60
+      enable_login_token: false
+    users:
+      # The auto-provisioned tailnet user is an org Admin.
+      auto_assign_org_role: Admin
+    # Keep the local admin login form as an emergency fallback (existingSecret above).
+    auth:
+      disable_login_form: false
 
 # Prometheus configuration
 prometheus:
