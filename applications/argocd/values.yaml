@@ -17,12 +17,9 @@ configs:
     # argocd-server serves plain HTTP on :80 with no 80->443 redirect. This mirrors
     # the live argocd-cmd-params-cm and is what makes argocd.tail4dd976.ts.net work.
     server.insecure: true
-
-# Repo-server: disable `git submodule update --init`. No ArgoCD Application sources
-# from the dbaas/home-mlops submodules, and the private home-mlops checkout was
-# failing auth and breaking the sync of EVERY repo-sourced app. Previously set live
-# via `kubectl set env`; captured here so it survives a repo-server recreate.
-repoServer:
-  env:
-    - name: ARGOCD_GIT_MODULES_ENABLED
-      value: "false"
+    # Disable `git submodule update --init` in the repo-server. No ArgoCD Application
+    # sources from the dbaas/home-mlops submodules, and the private home-mlops checkout
+    # was failing auth and breaking the sync of EVERY repo-sourced app. The repo-server
+    # reads this key into ARGOCD_GIT_MODULES_ENABLED. (Was set live via `kubectl set
+    # env ARGOCD_GIT_MODULES_ENABLED=false`; this is the declarative equivalent.)
+    reposerver.enable.git.submodule: "false"
