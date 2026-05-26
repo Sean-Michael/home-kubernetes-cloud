@@ -1,0 +1,28 @@
+# ArgoCD self-management values.
+#
+# Pinned to chart 9.1.8 (appVersion v3.2.1) in application.yaml so this ADOPTS the
+# existing kubectl-installed ArgoCD in place rather than upgrading it. The component
+# set here (server, repo-server, application-controller, applicationset, notifications,
+# dex, redis) matches the live install.
+
+configs:
+  # Do NOT let the chart manage argocd-secret. The original install holds the admin
+  # bcrypt password, server.secretkey, and the server TLS cert there; regenerating
+  # them would log us out / rotate the signing key. Leave it untouched.
+  secret:
+    createSecret: false
+
+  params:
+    # TLS is terminated upstream (Tailscale proxy -> Istio caliban-gateway), so
+    # argocd-server serves plain HTTP on :80 with no 80->443 redirect. This mirrors
+    # the live argocd-cmd-params-cm and is what makes argocd.tail4dd976.ts.net work.
+    server.insecure: true
+
+# Repo-server: disable `git submodule update --init`. No ArgoCD Application sources
+# from the dbaas/home-mlops submodules, and the private home-mlops checkout was
+# failing auth and breaking the sync of EVERY repo-sourced app. Previously set live
+# via `kubectl set env`; captured here so it survives a repo-server recreate.
+repoServer:
+  env:
+    - name: ARGOCD_GIT_MODULES_ENABLED
+      value: "false"

@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+  # Don't let ArgoCD prune itself if this Application is ever deleted.
+  finalizers: []
+spec:
+  project: default
+  sources:
+    # Upstream argo-cd Helm chart, pinned to the version whose appVersion == the
+    # currently-running v3.2.1 so this is an in-place adoption, not an upgrade.
+    - repoURL: https://argoproj.github.io/argo-helm
+      chart: argo-cd
+      targetRevision: 9.1.8
+      helm:
+        valueFiles:
+          - $values/applications/argocd/values.yaml
+    # This repo, only used to supply the values file above.
+    - repoURL: https://github.com/Sean-Michael/home-kubernetes-cloud.git
+      targetRevision: HEAD
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      selfHeal: true
+      # prune intentionally OFF until the first adoption sync is verified — avoids
+      # deleting any resource the chart happens not to render. Flip on once healthy.
+      prune: false
+    syncOptions:
+      # argocd CRDs are large; SSA avoids the last-applied-config annotation size limit.
+      - ServerSideApply=true
+      - CreateNamespace=false
