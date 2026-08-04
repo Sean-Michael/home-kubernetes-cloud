@@ -23,6 +23,11 @@ echo "=== Installing ArgoCD (helm bootstrap, then self-managed from Git) ==="
 helm repo add argo https://argoproj.github.io/argo-helm >/dev/null 2>&1 || true
 helm repo update argo >/dev/null
 kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+# Our values keep configs.secret.createSecret=false (so neither helm nor the
+# self-managed Application ever fights ArgoCD over this secret's contents),
+# which means a fresh cluster needs the empty secret pre-created — argocd-server
+# populates its signing key and admin password into it on first boot.
+kubectl create secret generic argocd-secret -n argocd 2>/dev/null || true
 helm upgrade --install argocd argo/argo-cd -n argocd \
     --version 9.1.8 -f applications/argocd/values.yaml --wait --timeout 10m
 
