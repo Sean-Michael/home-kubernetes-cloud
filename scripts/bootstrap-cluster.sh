@@ -77,6 +77,12 @@ fi
 
 echo "=== Restoring pgvector data (best-effort) ==="
 if [ -n "${BACKUP_DIR:-}" ] && [ -f "$BACKUP_DIR/pgvector-dumpall.sql" ]; then
+    # kubectl wait errors immediately if the pod doesn't exist yet (initdb
+    # still running), so poll for existence first.
+    for _ in $(seq 90); do
+        kubectl get pod pgvector-1 -n cnpg-system >/dev/null 2>&1 && break
+        sleep 10
+    done
     if kubectl wait --for=condition=Ready pod/pgvector-1 -n cnpg-system --timeout=900s 2>/dev/null; then
         kubectl exec -i -n cnpg-system pgvector-1 -c postgres -- psql -U postgres \
             < "$BACKUP_DIR/pgvector-dumpall.sql" > /tmp/pgvector-restore.log 2>&1 \
