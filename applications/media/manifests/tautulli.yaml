@@ -1,0 +1,65 @@
+# Tautulli (Plex stats/monitoring) — web UI on NodePort 30181.
+# Talks to Plex at caliban's host IP since Plex runs hostNetwork.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tautulli
+  namespace: media
+  labels:
+    app: tautulli
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: tautulli
+  template:
+    metadata:
+      labels:
+        app: tautulli
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: caliban
+      containers:
+        - name: tautulli
+          image: lscr.io/linuxserver/tautulli:latest
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: America/Los_Angeles
+          ports:
+            - containerPort: 8181
+              name: webui
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+      volumes:
+        - name: config
+          hostPath:
+            path: /data/appdata/tautulli
+            type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tautulli
+  namespace: media
+spec:
+  type: NodePort
+  selector:
+    app: tautulli
+  ports:
+    - name: webui
+      port: 8181
+      targetPort: 8181
+      nodePort: 30181

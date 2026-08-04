@@ -1,0 +1,82 @@
+# Plex Media Server, pinned to caliban (GPU node + where /data lives).
+#
+# - hostNetwork so the TV/clients on the LAN get GDM discovery and hit
+#   caliban:32400 directly — no dependency on the VM-side ingress path.
+# - GPU (NVENC/NVDEC) comes from caliban's containerd having nvidia as the
+#   *default* runtime, so the NVIDIA_* env vars are all that's needed; no
+#   nvidia.com/gpu resource claim, which leaves the device plugin resource
+#   free for ML workloads (vllm/home-mlops).
+# - All state is hostPath under /data so it survives cluster teardown
+#   (game mode) and even a full k3s reinstall.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plex
+  namespace: media
+  labels:
+    app: plex
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: plex
+  template:
+    metadata:
+      labels:
+        app: plex
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: caliban
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+        - name: plex
+          image: lscr.io/linuxserver/plex:latest
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: America/Los_Angeles
+            - name: VERSION
+              value: docker
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: all
+            - name: NVIDIA_DRIVER_CAPABILITIES
+              value: compute,video,utility
+          ports:
+            - containerPort: 32400
+              name: pms
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: media
+              mountPath: /media
+            - name: transcode
+              mountPath: /transcode
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              memory: 8Gi
+          readinessProbe:
+            httpGet:
+              path: /identity
+              port: 32400
+            initialDelaySeconds: 15
+            periodSeconds: 10
+      volumes:
+        - name: config
+          hostPath:
+            path: /data/appdata/plex
+            type: DirectoryOrCreate
+        - name: media
+          hostPath:
+            path: /data/media
+            type: DirectoryOrCreate
+        - name: transcode
+          emptyDir: {}
