@@ -2,9 +2,8 @@
 # install-mode-switch.sh — one-time root setup for game-mode/media-mode.
 #
 # Installs a sudoers drop-in so the smr user can start/stop the local
-# k3s-agent (and kill its containers) without a password prompt. That is
-# the only root privilege the mode-switch scripts need; VM management is
-# covered by the libvirt group.
+# k3s server (and kill its containers) without a password prompt. That is
+# the only root privilege the mode-switch scripts need.
 #
 # Usage: sudo ./scripts/install-mode-switch.sh
 set -euo pipefail
@@ -18,7 +17,7 @@ DROPIN=/etc/sudoers.d/k3s-mode-switch
 cat > "$DROPIN" <<'EOF'
 # Allow the desktop user to flip caliban between game mode and media mode
 # (see scripts/game-mode.sh / media-mode.sh in home-kubernetes-cloud).
-smr ALL=(root) NOPASSWD: /usr/bin/systemctl start k3s-agent.service, /usr/bin/systemctl stop k3s-agent.service, /usr/local/bin/k3s-killall.sh
+smr ALL=(root) NOPASSWD: /usr/bin/systemctl start k3s.service, /usr/bin/systemctl stop k3s.service, /usr/local/bin/k3s-killall.sh
 EOF
 chmod 0440 "$DROPIN"
 

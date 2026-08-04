@@ -1,0 +1,26 @@
+# NVIDIA device plugin — previously a manual `kubectl apply` + patch (see
+# docs/adding-gpu-node-to-k3s.md); now GitOps-managed. Exposes nvidia.com/gpu
+# on nodes labeled gpu=true. Note Plex does NOT claim this resource (it rides
+# the nvidia default runtime), so the GPU stays schedulable for ML workloads.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nvidia-device-plugin
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://nvidia.github.io/k8s-device-plugin
+    chart: nvidia-device-plugin
+    targetRevision: 0.17.4
+    helm:
+      values: |
+        nodeSelector:
+          gpu: "true"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

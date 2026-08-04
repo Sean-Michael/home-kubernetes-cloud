@@ -59,7 +59,6 @@ In-cluster names work because everything shares the `media` namespace.
 
 ## Game mode / media mode
 
-`scripts/game-mode.sh` stops the k3s agent + workloads on caliban and shuts
-down the cluster VMs, freeing GPU/RAM for gaming. `scripts/media-mode.sh`
-brings it all back; ArgoCD re-reconciles this stack automatically. One-time
-setup: `sudo scripts/install-mode-switch.sh`.
+`scripts/game-mode.sh` stops k3s and its workloads on caliban, freeing GPU/RAM
+for gaming. `scripts/media-mode.sh` brings it all back; ArgoCD re-reconciles
+this stack automatically. One-time setup: `sudo scripts/install-mode-switch.sh`.
