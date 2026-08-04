@@ -34,7 +34,11 @@ helm upgrade --install argocd argo/argo-cd -n argocd \
 echo "=== Pre-GitOps secrets ==="
 kubectl create namespace tailscale --dry-run=client -o yaml | kubectl apply -f -
 if [ -n "${BACKUP_DIR:-}" ] && [ -f "$BACKUP_DIR/tailscale-operator-oauth.yaml" ]; then
-    kubectl apply -f "$BACKUP_DIR/tailscale-operator-oauth.yaml"
+    # Strip instance metadata a `kubectl get -o yaml` export carries; a stale
+    # resourceVersion makes apply fail with a conflict on re-runs.
+    sed '/^  creationTimestamp:/d; /^  resourceVersion:/d; /^  uid:/d' \
+        "$BACKUP_DIR/tailscale-operator-oauth.yaml" | kubectl apply -f - \
+        || echo "!! operator-oauth apply failed — verify the secret manually"
 else
     echo "!! No tailscale operator-oauth backup found — create it manually"
     echo "!! (see applications/tailscale-operator/operator-oauth-secret.example.yaml)"
