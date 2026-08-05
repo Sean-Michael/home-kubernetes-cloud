@@ -17,6 +17,18 @@ spec:
       values: |
         nodeSelector:
           gpu: "true"
+        # The chart's default affinity requires NFD/GFD labels
+        # (feature.node.kubernetes.io/pci-10de.present etc.) that nothing on
+        # this cluster sets, leaving the DaemonSet with 0 desired nodes.
+        # Match our own gpu=true label instead.
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: gpu
+                      operator: In
+                      values: ["true"]
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
