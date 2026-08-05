@@ -35,6 +35,38 @@ data:
       controlnet: controlnet
       upscale_models: upscale_models
 ---
+# The image bundles a pinned ComfyUI (v0.21.x — too old for the MiniMax H3
+# nodes, which need >= 0.30). comfyui-boot sources /root/user-scripts/
+# pre-start.sh before launch; this script updates the persistent checkout to
+# the latest release tag on every pod start. An initContainer copies it into
+# the (writable) /root volume because the entrypoint chmod's the file, which
+# a read-only ConfigMap mount would break. NOTE: it is *sourced* under
+# `set -e` — no `exit`, and every command failure must be handled.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: comfyui-pre-start
+  namespace: comfyui
+data:
+  pre-start.sh: |
+    #!/bin/bash
+    # Managed by GitOps (applications/comfyui) — edits on-host are overwritten.
+    export PIP_USER=true PIP_ROOT_USER_ACTION=ignore PATH="${PATH}:/root/.local/bin"
+    if git -C /root/ComfyUI fetch --tags --quiet origin; then
+      latest=$(git -C /root/ComfyUI tag --list 'v*' --sort=-version:refname | head -1)
+      current=$(git -C /root/ComfyUI describe --tags --exact-match 2>/dev/null || echo unknown)
+      if [ -n "$latest" ] && [ "$current" != "$latest" ]; then
+        echo "[pre-start] Updating ComfyUI $current -> $latest"
+        git -C /root/ComfyUI checkout --quiet "$latest" \
+          && pip install --quiet -r /root/ComfyUI/requirements.txt \
+          || echo "[pre-start] update failed; starting whatever is checked out"
+      else
+        echo "[pre-start] ComfyUI already at $current"
+      fi
+    else
+      echo "[pre-start] git fetch failed (offline?); keeping $(git -C /root/ComfyUI describe --tags 2>/dev/null)"
+    fi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -56,6 +88,21 @@ spec:
     spec:
       nodeSelector:
         gpu: "true"
+      initContainers:
+        - name: install-pre-start
+          image: alpine:3.22
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              mkdir -p /root/user-scripts
+              cp /config/pre-start.sh /root/user-scripts/pre-start.sh
+              chmod +x /root/user-scripts/pre-start.sh
+          volumeMounts:
+            - name: appdata
+              mountPath: /root
+            - name: pre-start
+              mountPath: /config
       containers:
         - name: comfyui
           image: yanwk/comfyui-boot:cu128-slim
@@ -108,6 +155,9 @@ spec:
         - name: extra-model-paths
           configMap:
             name: comfyui-extra-model-paths
+        - name: pre-start
+          configMap:
+            name: comfyui-pre-start
 ---
 apiVersion: v1
 kind: Service

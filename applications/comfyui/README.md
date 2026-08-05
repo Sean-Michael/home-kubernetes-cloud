@@ -30,9 +30,12 @@ this card — the extra-model-paths ConfigMap maps all the standard folders.
 ## Moving parts
 
 - **`manifests/comfyui.yaml`** — Deployment (`yanwk/comfyui-boot:cu128-slim`,
-  clones latest ComfyUI into `/root` on first boot; H3 needs ≥ 0.30.0), NodePort
-  Service, and the extra-model-paths ConfigMap that points ComfyUI at
-  `/models` so the boot-time clone never collides with a volume inside it.
+  copies its bundled ComfyUI into `/root` on first boot), NodePort Service, and
+  two ConfigMaps: extra-model-paths (points ComfyUI at `/models` so the
+  boot-time copy never collides with a volume inside it) and a `pre-start.sh`
+  hook that git-updates the persistent checkout to the latest ComfyUI release
+  tag on every pod start — the image's bundled version lags behind what H3
+  needs (≥ 0.30.0). To pin ComfyUI, delete the hook from the ConfigMap.
   Claims `nvidia.com/gpu: 1` (ML convention) — mutually exclusive with
   vllm/home-mlops on the single GPU, by design.
 - **`manifests/minimax-h3-download-job.yaml`** — one-shot, resumable, idempotent
