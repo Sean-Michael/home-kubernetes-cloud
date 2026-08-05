@@ -1,0 +1,64 @@
+# One-shot downloader for the MiniMax H3 open-weights release (2026-08-03),
+# quantized variants sized for low-VRAM cards — ~40 GB total onto
+# /data/models/comfyui. Idempotent: finished files are skipped, partial
+# downloads resume (curl -C -), so pod restarts / re-syncs are harmless.
+#
+# Files (Comfy-Org repackaged release, ComfyUI-native layout):
+#   diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors  19.5G  t2v+i2v
+#   text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors         14.6G
+#   vae/minimax_h3_video_vae_fp16.safetensors                           4.9G
+#   vae/minimax_h3_audio_vae_fp32.safetensors                           0.6G
+# The 21G ref2va (reference-to-video) checkpoint is intentionally not
+# downloaded — add it here if you want R2V workflows.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: minimax-h3-download
+  namespace: comfyui
+spec:
+  backoffLimit: 20
+  template:
+    metadata:
+      labels:
+        app: minimax-h3-download
+    spec:
+      restartPolicy: OnFailure
+      nodeSelector:
+        kubernetes.io/hostname: caliban
+      containers:
+        - name: download
+          image: alpine:3.22
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              apk add --no-cache curl
+              base=https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main
+              fetch() { # $1 = repo-relative path
+                dst="/models/$1"
+                mkdir -p "$(dirname "$dst")"
+                if [ -f "$dst" ]; then echo "SKIP $1 (exists)"; return 0; fi
+                echo "GET  $1"
+                curl -fL --retry 10 --retry-all-errors -C - \
+                     -o "$dst.part" "$base/$1"
+                mv "$dst.part" "$dst"
+              }
+              fetch diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors
+              fetch text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors
+              fetch vae/minimax_h3_video_vae_fp16.safetensors
+              fetch vae/minimax_h3_audio_vae_fp32.safetensors
+              echo "All MiniMax H3 models present."
+          volumeMounts:
+            - name: models
+              mountPath: /models
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+      volumes:
+        - name: models
+          hostPath:
+            path: /data/models/comfyui
+            type: DirectoryOrCreate

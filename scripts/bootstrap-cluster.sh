@@ -66,6 +66,7 @@ apply applications/harbor/harbor.yaml
 apply applications/KubeRay/kuberay-operator.yaml
 apply applications/gateway-routes/application.yaml
 apply applications/media/application.yaml
+apply applications/comfyui/application.yaml
 
 echo "=== Waiting for CNPG operator, then creating pgvector cluster ==="
 if kubectl wait --for=condition=Available deploy/cnpg-cloudnative-pg -n cnpg-system --timeout=600s 2>/dev/null \

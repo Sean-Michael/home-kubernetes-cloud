@@ -1,0 +1,125 @@
+# ComfyUI (Stable Diffusion / MiniMax H3 video) — web UI on NodePort 30188
+# (caliban:30188) and https://comfyui.tail4dd976.ts.net via the shared gateway.
+#
+# Design notes:
+#   - yanwk/comfyui-boot:cu128-slim clones/updates the latest ComfyUI into /root
+#     on first boot (H3 needs ComfyUI >= 0.30.0; the checkout persists in
+#     /data/appdata/comfyui, so first start takes a few minutes, later ones don't).
+#     CUDA 12.8 matches caliban's 570.x driver; PyTorch cu128 still ships sm_75
+#     kernels for the RTX 2070 Super.
+#   - Claims nvidia.com/gpu (ML-workload convention — Plex-style env-var sharing
+#     is reserved for transcoding). Only one GPU exists: this locks out
+#     vllm/home-mlops while scheduled, which is the intent.
+#   - The 8 GB card can't hold the 33B H3 model; ComfyUI's dynamic VRAM/block
+#     swap offloads to system RAM, hence the fat memory limit (caliban has 64G).
+#   - Models live on the big disk under /data/models/comfyui and are wired in via
+#     --extra-model-paths-config so the boot-time git clone of /root/ComfyUI
+#     never collides with a volume mounted inside it.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: comfyui-extra-model-paths
+  namespace: comfyui
+data:
+  extra_model_paths.yaml: |
+    caliban:
+      base_path: /models
+      is_default: true
+      checkpoints: checkpoints
+      diffusion_models: diffusion_models
+      text_encoders: text_encoders
+      clip: text_encoders
+      vae: vae
+      loras: loras
+      embeddings: embeddings
+      controlnet: controlnet
+      upscale_models: upscale_models
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: comfyui
+  namespace: comfyui
+  labels:
+    app: comfyui
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: comfyui
+  template:
+    metadata:
+      labels:
+        app: comfyui
+    spec:
+      nodeSelector:
+        gpu: "true"
+      containers:
+        - name: comfyui
+          image: yanwk/comfyui-boot:cu128-slim
+          env:
+            - name: TZ
+              value: America/Los_Angeles
+            - name: CLI_ARGS
+              value: >-
+                --listen 0.0.0.0 --port 8188
+                --extra-model-paths-config /etc/comfyui/extra_model_paths.yaml
+          ports:
+            - containerPort: 8188
+              name: webui
+          volumeMounts:
+            - name: appdata
+              mountPath: /root
+            - name: models
+              mountPath: /models
+            - name: extra-model-paths
+              mountPath: /etc/comfyui
+          resources:
+            requests:
+              cpu: "1"
+              memory: 8Gi
+              nvidia.com/gpu: "1"
+            limits:
+              memory: 48Gi
+              nvidia.com/gpu: "1"
+          startupProbe:
+            httpGet:
+              path: /
+              port: 8188
+            periodSeconds: 10
+            failureThreshold: 90 # first boot clones ComfyUI + installs nodes
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8188
+            periodSeconds: 30
+            timeoutSeconds: 10
+      volumes:
+        - name: appdata
+          hostPath:
+            path: /data/appdata/comfyui
+            type: DirectoryOrCreate
+        - name: models
+          hostPath:
+            path: /data/models/comfyui
+            type: DirectoryOrCreate
+        - name: extra-model-paths
+          configMap:
+            name: comfyui-extra-model-paths
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: comfyui
+  namespace: comfyui
+spec:
+  type: NodePort
+  selector:
+    app: comfyui
+  ports:
+    - name: webui
+      port: 8188
+      targetPort: 8188
+      nodePort: 30188
