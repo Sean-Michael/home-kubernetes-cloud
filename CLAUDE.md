@@ -34,8 +34,9 @@ labeled `gpu=true`) now runs a single-node K3s **server** installed with
 
 `infrastructure/terraform` + `infrastructure/ansible` still fully describe the old
 KVM/libvirt cluster (the-rock `.10` control plane, deathwing-knight/ravenwing-black-knight
-agents on NAT `192.168.123.0/24`, caliban joined as GPU agent). VM disks were kept;
-`scripts/startup.sh` boots them again if ever needed. The last VM-cluster state (pgvector
+agents on NAT `192.168.123.0/24`, caliban joined as GPU agent). The VMs, their
+disks and libvirt networks were deleted 2026-11-20; the Terraform/Ansible code here
+could re-provision from scratch. The last VM-cluster state (pgvector
 dump, secrets, Application specs) is backed up under `/data/cluster-backup/`.
 
 ```bash
