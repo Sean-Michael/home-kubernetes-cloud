@@ -11,7 +11,7 @@ grafana:
     existingSecret: grafana-admin-credentials
     userKey: admin-user
     passwordKey: admin-password
-  # Tailnet-only: reached via the Istio gateway + Tailscale Ingress, not nginx.
+  # Tailnet-only: reach via a Tailscale Ingress (or port-forward).
   ingress:
     enabled: false
   # Behind the tailnet hostname Grafana must generate absolute URLs (login redirect,
@@ -21,8 +21,8 @@ grafana:
       root_url: https://grafana.tail4dd976.ts.net
       serve_from_sub_path: false
     # SSO via Tailscale identity. The Tailscale operator Ingress injects
-    # Tailscale-User-Login (your tailnet email) and these headers survive the hop
-    # through the Istio gateway (verified). Grafana trusts that header and auto-logs
+    # Tailscale-User-Login (your tailnet email) and these headers reach Grafana
+    # directly. Grafana trusts that header and auto-logs
     # you in as Admin -- no password, no external IdP. The tailnet is the login.
     auth.proxy:
       enabled: true
@@ -32,7 +32,7 @@ grafana:
       # Populate display name + email on the auto-created user from the other headers.
       headers: Name:Tailscale-User-Name Email:Tailscale-User-Login
       # Only accept the identity header from inside the cluster pod network, i.e. from
-      # the Istio gateway -- not from arbitrary clients. (The Tailscale proxy itself
+      # the in-cluster proxy -- not from arbitrary clients. (The Tailscale proxy itself
       # strips any client-supplied Tailscale-User-* headers, so external spoofing is
       # already prevented; this guards the in-cluster hop.)
       whitelist: 10.42.0.0/16
@@ -47,7 +47,7 @@ grafana:
 
 # Prometheus configuration
 prometheus:
-  # Tailnet-only: reached via the Istio gateway + Tailscale Ingress, not nginx.
+  # Tailnet-only: reach via a Tailscale Ingress (or port-forward).
   ingress:
     enabled: false
   prometheusSpec:
@@ -64,7 +64,7 @@ prometheus:
 
 # Alertmanager configuration
 alertmanager:
-  # Tailnet-only: reached via the Istio gateway + Tailscale Ingress, not nginx.
+  # Tailnet-only: reach via a Tailscale Ingress (or port-forward).
   ingress:
     enabled: false
   alertmanagerSpec:

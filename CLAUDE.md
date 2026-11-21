@@ -51,8 +51,8 @@ Caliban doubles as the living-room gaming PC. `scripts/game-mode.sh` stops k3s a
 its containers (frees GPU/RAM); `scripts/media-mode.sh` starts k3s again and ArgoCD
 re-reconciles everything from Git. Passwordless flipping needs the sudoers drop-in
 (installed by `migrate-standalone.sh`, or `sudo scripts/install-mode-switch.sh`, which
-also adds desktop launchers). Media-stack state is all hostPath under `/data`, so mode
-flips are lossless.
+also adds desktop launchers). App state is hostPath/local-path on disk, so mode flips
+are lossless.
 
 ## GitOps with ArgoCD (`applications/`)
 
@@ -74,10 +74,10 @@ When a CRD's spec is mutated by its operator (e.g. CNPG `Cluster`), the Applicat
 Most apps run with `automated: { prune: true, selfHeal: true }` and `CreateNamespace=true`.
 
 Notable apps: `kube-prometheus-stack` (monitoring/Grafana, with DCGM GPU metrics),
-`cloudnativepg` (Postgres operator + `pgvector` cluster for RAG), `KubeRay`, `harbor`
-(private registry for pushing custom images), `vllm`/`home-mlops` (ML inference/training),
-`media` (Plex + Sonarr/Radarr/Prowlarr/qBittorrent/Overseerr/Tautulli pinned to caliban,
-hostPath state under `/data`, Plex on hostNetwork :32400 with NVENC — see its README).
+`cloudnativepg` (Postgres operator + `pgvector` cluster for RAG), `comfyui`
+(NodePort 30188), `nvidia-device-plugin`, `tailscale-operator`. Istio/Gateway API,
+Harbor, KubeRay and the media stack were removed 2026-11-20 to keep the cluster lean;
+see git history if you ever want them back.
 
 ## Submodules
 

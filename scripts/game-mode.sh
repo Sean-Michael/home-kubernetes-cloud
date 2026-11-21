@@ -2,7 +2,7 @@
 # game-mode.sh — free caliban for couch gaming.
 #
 # Stops the local k3s server and kills its workload containers, releasing the
-# GPU, RAM, and CPU held by the platform (Plex & friends included). All media
+# GPU, RAM, and CPU held by the platform. All app
 # state is on /data hostPaths, so this is always safe; media-mode.sh brings
 # everything back and ArgoCD re-reconciles from Git.
 #

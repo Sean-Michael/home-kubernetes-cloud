@@ -52,20 +52,10 @@ fi
 echo "=== Applying ArgoCD Applications (dependency order) ==="
 apply() { kubectl apply -f "$1"; }
 apply applications/argocd/application.yaml            # self-management adoption
-apply applications/gateway-api/application.yaml
-apply applications/istio/1-base-application.yaml
-apply applications/istio/2-istiod-application.yaml
-apply applications/istio/3-cni-application.yaml
-apply applications/istio/4-ztunnel-application.yaml
-apply applications/istio/5-ambient-namespaces-application.yaml
 apply applications/tailscale-operator/application.yaml
 apply applications/nvidia-device-plugin/application.yaml
 apply applications/cloudnativepg/application.yaml
 apply applications/kube-prometheus-stack/application.yaml
-apply applications/harbor/harbor.yaml
-apply applications/KubeRay/kuberay-operator.yaml
-apply applications/gateway-routes/application.yaml
-apply applications/media/application.yaml
 apply applications/comfyui/application.yaml
 
 echo "=== Waiting for CNPG operator, then creating pgvector cluster ==="

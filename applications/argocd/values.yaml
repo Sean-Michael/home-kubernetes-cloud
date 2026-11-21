@@ -13,7 +13,7 @@ configs:
     createSecret: false
 
   params:
-    # TLS is terminated upstream (Tailscale proxy -> Istio caliban-gateway), so
+    # TLS is terminated upstream (Tailscale proxy), so
     # argocd-server serves plain HTTP on :80 with no 80->443 redirect. This mirrors
     # the live argocd-cmd-params-cm and is what makes argocd.tail4dd976.ts.net work.
     server.insecure: true

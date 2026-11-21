@@ -42,7 +42,6 @@ this card — the extra-model-paths ConfigMap maps all the standard folders.
   ~40 GB pull of the H3 quantized weights from
   [Comfy-Org/MiniMax-H3](https://huggingface.co/Comfy-Org/MiniMax-H3). The 21 G
   reference-to-video checkpoint is skipped; add a `fetch` line if you want R2V.
-- **`manifests/routes.yaml`** — HTTPRoute on the shared `caliban-gateway`.
 
 ## First run
 

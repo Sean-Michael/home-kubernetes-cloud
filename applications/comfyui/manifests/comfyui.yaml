@@ -1,5 +1,5 @@
 # ComfyUI (Stable Diffusion / MiniMax H3 video) — web UI on NodePort 30188
-# (caliban:30188) and https://comfyui.tail4dd976.ts.net via the shared gateway.
+# (caliban:30188).
 #
 # Design notes:
 #   - yanwk/comfyui-boot:cu128-slim clones/updates the latest ComfyUI into /root
